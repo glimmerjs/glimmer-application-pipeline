@@ -27,6 +27,7 @@
     "broccoli-typescript-compiler": "^1.0.1",
     "broccoli-uglify-sourcemap": "^1.4.0",
     "ember-cli": "2.10.0",
+    "glob": "^7.1.1",
     "handlebars": "^4.0.5",
     "rimraf": "^2.5.4",
     "rollup": "^0.36.4",

@@ -256,14 +256,6 @@ class GlimmerApp {
     return new RollupWithDependencies(jsTree, {
       inputFiles: ['**/*.js'],
       rollup: {
-        onwarn(message) {
-          // Suppress known error message caused by TypeScript compiled code with Rollup
-          // https://github.com/rollup/rollup/wiki/Troubleshooting#this-is-undefined
-          if (/The \`this\` keyword is equivalent to \`undefined\` at the top level of an ES module, and has been rewritten/.test(message)) {
-            return;
-          }
-          console.log("Rollup warning: ", message);
-        },
         format: 'es',
         entry: 'index.js',
         dest: 'app.js',
@@ -298,21 +290,21 @@ class GlimmerApp {
 
     return new ResolutionMapBuilder(src, this._configTree(), {
       configPath: this._configPath()
-      // configPath: 'src/config/environment.js'
-      // configPath: `src/config/environments/${this.env}.js`
     });
   }
 
   htmlTree() {
+    let srcTree = this.trees.srcTree; 
+
     const htmlName = this.options.outputPaths.app.html;
     const files = [
-      'index.html'
+      'ui/index.html'
     ];
 
-    const index = new Funnel('src/ui', {
+    const index = new Funnel(srcTree, {
       files,
       getDestinationPath(relativePath) {
-        if (relativePath === 'index.html') {
+        if (relativePath === 'ui/index.html') {
           relativePath = htmlName;
         }
         return relativePath;

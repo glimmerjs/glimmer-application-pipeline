@@ -90,7 +90,6 @@ interface Tree {
  * compatible with the module unification layout.
  *
  * @class GlimmerApp
- * @extends EmberApp
  * @constructor
  * @param {Object} [defaults]
  * @param {Object} [options={}] Configuration options

@@ -98,7 +98,7 @@ class GlimmerApp {
   public options: GlimmerAppOptions;
   public project: Project;
   public name: string;
-  public env: 'production' | 'development';
+  public env: 'production' | 'development' | 'test';
 
   protected trees: Trees;
   protected srcPath: string;

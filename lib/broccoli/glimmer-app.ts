@@ -284,10 +284,6 @@ class GlimmerApp {
     });
   }
 
-  _configPath() {
-    return path.join(this.name, 'config', 'environments', this.env + '.json');
-  }
-
   rewriteConfigEnvironment(src) {
     return new ConfigReplace(src, this._configTree(), {
       configPath: this._configPath(),
@@ -332,9 +328,13 @@ class GlimmerApp {
     });
   }
 
+  protected _configPath() {
+    return path.join(this.name, 'config', 'environments', this.env + '.json');
+  }
+
   _cachedConfigTree: any;
 
-  _configTree() {
+  protected _configTree() {
     if (this._cachedConfigTree) {
       return this._cachedConfigTree;
     }

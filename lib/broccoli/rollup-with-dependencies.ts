@@ -1,7 +1,6 @@
 import * as Rollup from 'broccoli-rollup';
 import * as nodeResolve from 'rollup-plugin-node-resolve';
 import * as babel from 'rollup-plugin-babel';
-import * as sourcemaps from 'rollup-plugin-sourcemaps';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -17,7 +16,7 @@ class RollupWithDependencies extends Rollup {
     let plugins = this.rollupOptions.plugins || [];
     let inputPath = this.inputPaths[0];
 
-    plugins.push(sourcemaps());
+    plugins.push(loadWithInlineMap());
 
     plugins.push(babel({
       presets: [
@@ -29,24 +28,9 @@ class RollupWithDependencies extends Rollup {
       plugins: [
         'external-helpers'
       ],
-      // TODO sourceMaps: 'inline',
-      retainLines: true
+      sourceMaps: 'inline',
+      retainLines: false
     }));
-
-    plugins.push({
-      resolveId(importee, importer) {
-        let modulePath = path.join(inputPath, importee, 'index.js');
-
-        if (fs.existsSync(modulePath)) {
-          return modulePath;
-        }
-
-        modulePath = path.join(inputPath, importee + '.js');
-        if (fs.existsSync(modulePath)) {
-          return modulePath;
-        }
-      }
-    });
 
     plugins.push(nodeResolve({
       jsnext: true,
@@ -55,8 +39,45 @@ class RollupWithDependencies extends Rollup {
 
     this.rollupOptions.plugins = plugins;
 
+    this.rollupOptions.onwarn = function(message) {
+      // Suppress known error message caused by TypeScript compiled code with Rollup
+      // https://github.com/rollup/rollup/wiki/Troubleshooting#this-is-undefined
+      if (/The \`this\` keyword is equivalent to \`undefined\` at the top level of an ES module, and has been rewritten/.test(message)) {
+        return;
+      }
+      console.log("Rollup warning: ", message);
+    };
+
     return Rollup.prototype.build.apply(this, args);
   }
+}
+
+let SOURCE_MAPPING_DATA_URL = '//# sourceMap';
+SOURCE_MAPPING_DATA_URL += 'pingURL=data:application/json;base64,';
+
+function loadWithInlineMap() {
+  return {
+    load: function (id) {
+      if (id.indexOf('\0') > -1) { return; }
+
+      var code = fs.readFileSync(id, 'utf8');
+      var result = {
+        code: code,
+        map: null
+      };
+      var index = code.lastIndexOf(SOURCE_MAPPING_DATA_URL);
+      if (index === -1) {
+        return result;
+      }
+      result.code = code;
+      result.map = parseSourceMap(code.slice(index + SOURCE_MAPPING_DATA_URL.length));
+      return result;
+    }
+  };
+}
+
+function parseSourceMap(base64) {
+  return JSON.parse(new Buffer(base64, 'base64').toString('utf8'));
 }
 
 export default RollupWithDependencies;

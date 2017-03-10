@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "allowJs": true,
+    "noImplicitAny": false,
+    "strictNullChecks": true,
+    "target": "es6",
+    "moduleResolution": "node",
+    "module": "commonjs",
+    "outDir": "dist",
+    "rootDir": "lib"
+  },
+
+  "include": [
+    "lib"
+  ]
+}

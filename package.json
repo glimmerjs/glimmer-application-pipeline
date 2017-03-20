@@ -7,7 +7,6 @@
     "Tom Dale <tom@tomdale.net>"
   ],
   "scripts": {
-    "prepublish": "tsc"
   },
   "repository": "https://github.com/glimmerjs/glimmer-application-pipeline",
   "license": "MIT",

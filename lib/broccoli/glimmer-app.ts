@@ -237,9 +237,8 @@ class GlimmerApp {
 
   compiledTypeScriptTree(srcTree, nodeModulesTree) {
     const tsOptions = this.tsOptions();
-    const srcAndDependenciesTree = merge([srcTree, nodeModulesTree])
 
-    return typescript(srcAndDependenciesTree, tsOptions);
+    return typescript(srcTree, tsOptions);
   }
 
   compiledHandlebarsTree(srcTree) {

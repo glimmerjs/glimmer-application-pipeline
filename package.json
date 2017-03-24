@@ -6,7 +6,10 @@
     "Dan Gebhardt <dan@cerebris.com>",
     "Tom Dale <tom@tomdale.net>"
   ],
-  "scripts": {},
+  "scripts": {
+    "build": "tsc",
+    "postversion": "git push origin master --tags"
+  },
   "repository": "https://github.com/glimmerjs/glimmer-application-pipeline",
   "license": "MIT",
   "main": "dist/index.js",

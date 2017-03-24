@@ -18,19 +18,7 @@ class RollupWithDependencies extends Rollup {
 
     plugins.push(loadWithInlineMap());
 
-    plugins.push(babel({
-      presets: [
-        [
-          'es2015',
-          { modules: false }
-        ]
-      ],
-      plugins: [
-        'external-helpers'
-      ],
-      sourceMaps: 'inline',
-      retainLines: false
-    }));
+    plugins.push(babel(getBabelConfig()));
 
     plugins.push(nodeResolve({
       jsnext: true,
@@ -78,6 +66,29 @@ function loadWithInlineMap() {
 
 function parseSourceMap(base64) {
   return JSON.parse(new Buffer(base64, 'base64').toString('utf8'));
+}
+
+function getBabelConfig() {
+  let babelRcPath = path.join(process.cwd(), '.babelrc');
+  let defaultConfig = {
+    presets: [
+      [
+        'es2015',
+        { modules: false }
+      ]
+    ],
+    plugins: [
+      'external-helpers'
+    ],
+    sourceMaps: 'inline',
+    retainLines: false
+  };
+
+  if (fs.existsSync(babelRcPath)) {
+    return JSON.parse(fs.readFileSync(babelRcPath).toString());
+  }
+
+  return defaultConfig;
 }
 
 export default RollupWithDependencies;

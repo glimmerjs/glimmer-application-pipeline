@@ -35,6 +35,7 @@
     "broccoli-string-replace": "^0.1.1",
     "broccoli-typescript-compiler": "^1.0.1",
     "broccoli-uglify-sourcemap": "^1.4.0",
+    "ember-cli-inject-live-reload": "^1.4.1",
     "handlebars": "^4.0.5",
     "heimdalljs-logger": "^0.1.8",
     "lodash.defaultsdeep": "^4.6.0",

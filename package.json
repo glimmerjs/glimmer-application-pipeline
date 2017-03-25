@@ -4,16 +4,24 @@
   "description": "Tooling for developing Glimmer standalone apps with ember-cli",
   "contributors": [
     "Dan Gebhardt <dan@cerebris.com>",
-    "Tom Dale <tom@tomdale.net>"
+    "Tom Dale <tom@tomdale.net>",
+    "Robbie Pitts <me@robbie-pitts.com>"
   ],
   "scripts": {
-    "build": "tsc",
-    "postversion": "git push origin master --tags"
+    "build": "ember build",
+    "preversion": "npm test",
+    "prepublish": "npm run build",
+    "postpublish": "git push origin master --tags",
+    "test": "ember test"
   },
   "repository": "https://github.com/glimmerjs/glimmer-application-pipeline",
   "license": "MIT",
-  "main": "dist/index.js",
-  "typings": "dist/index.d.ts",
+  "main": "dist/commonjs/es5/index.js",
+  "module": "dist/modules/es2017/index.js",
+  "types": "dist/types/index.d.ts",
+  "files": [
+    "dist"
+  ],
   "dependencies": {
     "@glimmer/compiler": "0.23.0-alpha.7",
     "@glimmer/di": "^0.2.0",
@@ -46,7 +54,9 @@
     "walk-sync": "^0.3.1"
   },
   "devDependencies": {
+    "@glimmer/build": "^0.6.1",
     "@types/node": "^7.0.7",
+    "ember-cli": "2.13.0-beta.2",
     "typescript": "^2.2.1"
   }
 }

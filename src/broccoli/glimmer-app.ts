@@ -15,7 +15,7 @@ import replace = require('broccoli-string-replace');
 import babel = require('broccoli-babel-transpiler');
 import assetRev = require('broccoli-asset-rev');
 import uglify = require('broccoli-uglify-sourcemap')
-import ResolutionMapBuilder = require('@glimmer/resolution-map-builder');
+import ResolutionMapBuilder from '@glimmer/resolution-map-builder';
 import RollupWithDependencies from './rollup-with-dependencies';
 import GlimmerTemplatePrecompiler from './glimmer-template-precompiler';
 

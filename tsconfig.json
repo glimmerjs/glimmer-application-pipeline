@@ -1,16 +1,18 @@
 {
   "compilerOptions": {
-    "allowJs": true,
-    "noImplicitAny": false,
-    "strictNullChecks": true,
-    "target": "es6",
-    "moduleResolution": "node",
+    "declaration": true,
     "module": "commonjs",
+    "target": "ES6",
     "outDir": "dist",
-    "rootDir": "lib"
+    "sourceMap": true,
+    "moduleResolution": "node"
   },
 
+  "exclude": [
+    "node_modules", "bower_components", "dist"
+  ],
+
   "include": [
-    "lib"
+    "lib/index.ts"
   ]
 }

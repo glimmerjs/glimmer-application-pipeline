@@ -66,10 +66,15 @@ interface GlimmerAppOptions {
   outputPaths: any;
 }
 
+interface Addon {
+  contentFor: (type: string, config, content: string[]) => string;
+}
+
 interface Project {
   root: string;
   name(): string;
   configPath(): string;
+  addons: Addon[];
 
   pkg: {
     name: string;
@@ -125,8 +130,11 @@ class GlimmerApp {
 
   _configReplacePatterns() {
     return [{
-      match: /{{rootURL}}/g,
+      match: /\{\{rootURL\}\}/g,
       replacement: () => '',
+    }, {
+      match: /\{\{content-for ['"](.+)["']\}\}/g,
+      replacement: this.contentFor.bind(this)
     }];
   }
 
@@ -312,13 +320,45 @@ class GlimmerApp {
     });
 
     return new ConfigReplace(index, this._configTree(), {
-      configPath: path.join(this.name, 'config', 'environments', this.env + '.json'),
+      configPath: this._configPath(),
       files: [ htmlName ],
       patterns: this._configReplacePatterns()
     });
   }
 
-  protected _configPath() {
+  contentFor(config, match: RegExp, type: string) {
+    let content: string[] = [];
+
+    switch (type) {
+      case 'head': 
+        this._contentForHead(content, config);
+        break;
+    }
+
+    content = <string[]>this.project.addons.reduce(function(content: string[], addon: Addon): string[] {
+      var addonContent = addon.contentFor ? addon.contentFor(type, config, content) : null;
+      if (addonContent) {
+        return content.concat(addonContent);
+      }
+
+      return content;
+    }, content);
+
+    return content.join('\n');
+  }
+
+  protected _contentForHead(content: string[], config) {
+    // TODO?
+    // content.push(calculateBaseTag(config));
+
+    // TODO?
+    // if (this.options.storeConfigInMeta) {
+    //   content.push('<meta name="' + config.modulePrefix + '/config/environment" ' +
+    //               'content="' + escape(JSON.stringify(config)) + '" />');
+    // }
+  }
+
+  protected _configPath(): string {
     return path.join(this.name, 'config', 'environments', this.env + '.json');
   }
 

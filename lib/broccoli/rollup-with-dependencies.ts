@@ -39,13 +39,13 @@ class RollupWithDependencies extends Rollup {
 
     this.rollupOptions.plugins = plugins;
 
-    this.rollupOptions.onwarn = function(message) {
+    this.rollupOptions.onwarn = function(warning) {
       // Suppress known error message caused by TypeScript compiled code with Rollup
       // https://github.com/rollup/rollup/wiki/Troubleshooting#this-is-undefined
-      if (/The \`this\` keyword is equivalent to \`undefined\` at the top level of an ES module, and has been rewritten/.test(message)) {
+      if (warning.code === 'THIS_IS_UNDEFINED') {
         return;
       }
-      console.log("Rollup warning: ", message);
+      console.log("Rollup warning: ", warning.message);
     };
 
     return Rollup.prototype.build.apply(this, args);

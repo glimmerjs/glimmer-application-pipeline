@@ -22,6 +22,10 @@
   "files": [
     "dist"
   ],
+  "keywords": [
+    "glimmer",
+    "ember-addon"
+  ],
   "dependencies": {
     "@glimmer/compiler": "^0.23.0-alpha.11",
     "@glimmer/di": "^0.2.0",
@@ -44,6 +48,9 @@
     "broccoli-typescript-compiler": "^1.0.1",
     "broccoli-uglify-sourcemap": "^1.4.0",
     "ember-cli-inject-live-reload": "^1.4.1",
+    "ember-cli-normalize-entity-name": "^1.0.0",
+    "ember-cli-string-utils": "^1.1.0",
+    "ember-cli-valid-component-name": "^1.0.0",
     "handlebars": "^4.0.5",
     "heimdalljs-logger": "^0.1.8",
     "lodash.defaultsdeep": "^4.6.0",
@@ -58,5 +65,8 @@
     "@types/node": "^7.0.7",
     "ember-cli": "2.13.0-beta.2",
     "typescript": "^2.2.1"
+  },
+  "ember-addon": {
+    "main": "ember-cli-addon.js"
   }
 }

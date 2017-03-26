@@ -1,30 +1,25 @@
-import defaultsDeep = require('lodash.defaultsDeep')
+import defaultsDeep from 'lodash.defaultsDeep';
 
-import * as ConfigLoader from 'broccoli-config-loader';
-import * as ConfigReplace from 'broccoli-config-replace';
+import ConfigLoader from 'broccoli-config-loader';
+import ConfigReplace from 'broccoli-config-replace';
 
-import Funnel = require('broccoli-funnel');
-import fs = require('fs');
-import path = require('path');
+import Funnel from 'broccoli-funnel';
+import * as path from 'path';
 import { typescript } from 'broccoli-typescript-compiler';
-import existsSync = require('exists-sync');
-import concat = require('broccoli-concat');
-import merge = require('broccoli-merge-trees');
-import compileSass = require('broccoli-sass');
-import replace = require('broccoli-string-replace');
-import babel = require('broccoli-babel-transpiler');
-import assetRev = require('broccoli-asset-rev');
-import uglify = require('broccoli-uglify-sourcemap')
-import ResolutionMapBuilder = require('@glimmer/resolution-map-builder');
+import existsSync from 'exists-sync';
+import merge from 'broccoli-merge-trees';
+import assetRev from 'broccoli-asset-rev';
+import uglify from 'broccoli-uglify-sourcemap';
+import ResolutionMapBuilder from '@glimmer/resolution-map-builder';
 import RollupWithDependencies from './rollup-with-dependencies';
 import GlimmerTemplatePrecompiler from './glimmer-template-precompiler';
 
 import { WatchedDir, UnwatchedDir } from 'broccoli-source';
 
-import Logger = require('heimdalljs-logger');
+import Logger from 'heimdalljs-logger';
 const logger = Logger('@glimmer/application-pipeline:glimmer-app');
 
-import stew = require('broccoli-stew');
+import stew from 'broccoli-stew';
 const mv = stew.mv;
 const find = stew.find;
 const map = stew.map;
@@ -62,15 +57,15 @@ const DEFAULT_TS_OPTIONS = {
   }
 };
 
-interface GlimmerAppOptions {
+export interface GlimmerAppOptions {
   outputPaths: any;
 }
 
-interface Addon {
+export interface Addon {
   contentFor: (type: string, config, content: string[]) => string;
 }
 
-interface Project {
+export interface Project {
   root: string;
   name(): string;
   configPath(): string;
@@ -81,12 +76,12 @@ interface Project {
   }
 }
 
-interface Trees {
+export interface Trees {
   srcTree: Tree;
   nodeModulesTree: Tree;
 }
 
-interface Tree {
+export interface Tree {
 
 }
 
@@ -99,7 +94,7 @@ interface Tree {
  * @param {Object} [defaults]
  * @param {Object} [options={}] Configuration options
  */
-class GlimmerApp {
+export default class GlimmerApp {
   public options: GlimmerAppOptions;
   public project: Project;
   public name: string;
@@ -384,5 +379,3 @@ class GlimmerApp {
     return this._cachedConfigTree;
   }
 }
-
-export default GlimmerApp;

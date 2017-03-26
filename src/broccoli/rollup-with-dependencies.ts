@@ -1,6 +1,6 @@
-import * as Rollup from 'broccoli-rollup';
-import * as nodeResolve from 'rollup-plugin-node-resolve';
-import * as babel from 'rollup-plugin-babel';
+import Rollup from 'broccoli-rollup';
+import nodeResolve from 'rollup-plugin-node-resolve';
+import babel from 'rollup-plugin-babel';
 import * as fs from 'fs';
 import * as path from 'path';
 

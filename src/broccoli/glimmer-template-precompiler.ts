@@ -1,5 +1,5 @@
-import * as Filter from 'broccoli-persistent-filter';
-import * as compiler from '@glimmer/compiler';
+import Filter from 'broccoli-persistent-filter';
+import { precompile } from '@glimmer/compiler';
 
 interface TemplateMeta {
   '<template-meta>': true;
@@ -18,7 +18,7 @@ class GlimmerTemplatePrecompiler extends Filter {
 
   processString(content, relativePath) {
     let specifier = getTemplateSpecifier(this.options.rootName, relativePath);
-    return 'export default ' + compiler.precompile<TemplateMeta>(content, { meta: { specifier, '<template-meta>': true } }) + ';';
+    return 'export default ' + precompile<TemplateMeta>(content, { meta: { specifier, '<template-meta>': true } }) + ';';
   }
 }
 

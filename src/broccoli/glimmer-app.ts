@@ -1,7 +1,7 @@
 import defaultsDeep from 'lodash.defaultsDeep';
 
-import * as ConfigLoader from 'broccoli-config-loader';
-import * as ConfigReplace from 'broccoli-config-replace';
+import ConfigLoader from 'broccoli-config-loader';
+import ConfigReplace from 'broccoli-config-replace';
 
 import Funnel from 'broccoli-funnel';
 import * as path from 'path';
@@ -94,7 +94,7 @@ export interface Tree {
  * @param {Object} [defaults]
  * @param {Object} [options={}] Configuration options
  */
-class GlimmerApp {
+export default class GlimmerApp {
   public options: GlimmerAppOptions;
   public project: Project;
   public name: string;
@@ -379,5 +379,3 @@ class GlimmerApp {
     return this._cachedConfigTree;
   }
 }
-
-export default GlimmerApp;

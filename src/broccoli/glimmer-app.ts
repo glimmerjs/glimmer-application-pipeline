@@ -5,15 +5,17 @@ import ConfigReplace from 'broccoli-config-replace';
 
 import Funnel from 'broccoli-funnel';
 import * as path from 'path';
+import fs from 'fs';
 import { typescript } from 'broccoli-typescript-compiler';
 import existsSync from 'exists-sync';
 import merge from 'broccoli-merge-trees';
 import assetRev from 'broccoli-asset-rev';
 import uglify from 'broccoli-uglify-sourcemap';
 import ResolutionMapBuilder from '@glimmer/resolution-map-builder';
+import ResolverConfigurationBuilder from '@glimmer/resolver-configuration-builder';
 import RollupWithDependencies from './rollup-with-dependencies';
 import GlimmerTemplatePrecompiler from './glimmer-template-precompiler';
-
+import defaultModuleConfiguration from './default-module-configuration';
 import { WatchedDir, UnwatchedDir } from 'broccoli-source';
 
 import Logger from 'heimdalljs-logger';
@@ -226,12 +228,17 @@ export default class GlimmerApp {
     // keys.
     const moduleMap = this.buildResolutionMap(resolvableTree);
 
-    // Merge the JavaScript source and generated module map together, making
-    // sure to overwrite the stub module-map.js in the source tree with the
-    // generated one.
+    // Build the resolver configuration file.
+    const resolverConfiguration = this.buildResolverConfiguration();
+
+    // Merge the JavaScript source and generated module map and resolver 
+    // configuration files together, making sure to overwrite the stub 
+    // module-map.js and resolver-configuration.js in the source tree with the
+    // generated ones.
     let jsTree = merge([
       resolvableTree,
-      moduleMap
+      moduleMap,
+      resolverConfiguration
     ], { overwrite: true });
 
     // Finally, bundle the app into a single rolled up .js file.
@@ -291,7 +298,17 @@ export default class GlimmerApp {
     });
 
     return new ResolutionMapBuilder(src, this._configTree(), {
-      configPath: this._configPath()
+      configPath: this._configPath(),
+      defaultModulePrefix: this.name,
+      defaultModuleConfiguration
+    });
+  }
+
+  buildResolverConfiguration() {
+    return new ResolverConfigurationBuilder(this._configTree(), {
+      configPath: this._configPath(),
+      defaultModulePrefix: this.name,
+      defaultModuleConfiguration
     });
   }
 

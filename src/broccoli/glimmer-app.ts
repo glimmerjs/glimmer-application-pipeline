@@ -1,4 +1,4 @@
-import defaultsDeep from 'lodash.defaultsDeep';
+import defaultsDeep from 'lodash.defaultsdeep';
 
 import ConfigLoader from 'broccoli-config-loader';
 import ConfigReplace from 'broccoli-config-replace';

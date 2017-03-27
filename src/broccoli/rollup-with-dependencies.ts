@@ -15,10 +15,12 @@ class RollupWithDependencies extends Rollup {
   build(...args) {
     let plugins = this.rollupOptions.plugins || [];
     let inputPath = this.inputPaths[0];
+    let packageJSON = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'package.json')).toString('utf8'));
+    let es5 = !(packageJSON.devDependencies['@glimmer/web-component']);
 
     plugins.push(loadWithInlineMap());
 
-    plugins.push(babel(getBabelConfig()));
+    plugins.push(babel(getBabelConfig(es5)));
 
     plugins.push(nodeResolve({
       jsnext: true,
@@ -68,15 +70,9 @@ function parseSourceMap(base64) {
   return JSON.parse(new Buffer(base64, 'base64').toString('utf8'));
 }
 
-function getBabelConfig() {
-  let babelRcPath = path.join(process.cwd(), '.babelrc');
-  let defaultConfig = {
-    presets: [
-      [
-        'es2015',
-        { modules: false }
-      ]
-    ],
+function getBabelConfig(es5) {
+  let baseConfig = {
+    presets: [],
     plugins: [
       'external-helpers'
     ],
@@ -84,11 +80,16 @@ function getBabelConfig() {
     retainLines: false
   };
 
-  if (fs.existsSync(babelRcPath)) {
-    return JSON.parse(fs.readFileSync(babelRcPath).toString());
+  if (es5) {
+    baseConfig.presets.push(
+      [
+        'es2015',
+        { modules: false }
+      ]
+    );
   }
 
-  return defaultConfig;
+  return baseConfig;
 }
 
 export default RollupWithDependencies;

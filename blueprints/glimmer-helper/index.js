@@ -19,7 +19,7 @@ module.exports = {
   },
 
   locals(options) {
-    let functionName = stringUtils.camelize(options.entity.name);
+    let functionName = stringUtils.camelize(options.entity.name.replace(/\//g, '-'));
     return { functionName };
   },
 };

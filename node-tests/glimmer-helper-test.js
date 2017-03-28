@@ -37,4 +37,18 @@ describe('Acceptance: ember generate and destroy glimmer-helper', function() {
         expect(file('src/ui/components/foo-bar/component.ts')).to.not.exist;
       }));
   });
+
+  it('glimmer-helper foo/bar/baz', function () {
+    let args = ['glimmer-helper', 'foo/bar/baz'];
+
+    return emberNew()
+      .then(() => emberGenerateDestroy(args, (file) => {
+        expect(file('src/ui/components/foo/bar/baz/helper.ts'))
+          .to.contain(`export default function fooBarBaz(params) {`);
+
+        expect(file('src/ui/components/foo/bar/baz/helper.js')).to.not.exist;
+        expect(file('src/ui/components/foo/bar/baz/template.hbs')).to.not.exist;
+        expect(file('src/ui/components/foo/bar/baz/component.ts')).to.not.exist;
+      }));
+  });
 });

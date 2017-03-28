@@ -2,6 +2,7 @@ export default {
   types: {
     application: { definitiveCollection: 'main' },
     component: { definitiveCollection: 'components' },
+    helper: { definitiveCollection: 'components' },
     renderer: { definitiveCollection: 'main' },
     template: { definitiveCollection: 'components' }
   },
@@ -11,7 +12,7 @@ export default {
     },
     components: {
       group: 'ui',
-      types: ['component', 'template'],
+      types: ['component', 'template', 'helper'],
       defaultType: 'component',
       privateCollections: ['utils']
     },

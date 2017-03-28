@@ -178,8 +178,8 @@ export default class GlimmerApp {
 
   /**
    * Creates a Broccoli tree representing the compiled Glimmer application.
-   * 
-   * @param options 
+   *
+   * @param options
    */
   toTree(options) {
     let isProduction = process.env.EMBER_ENV === 'production';
@@ -232,8 +232,8 @@ export default class GlimmerApp {
     // Build the resolver configuration file.
     const resolverConfiguration = this.buildResolverConfiguration();
 
-    // Merge the JavaScript source and generated module map and resolver 
-    // configuration files together, making sure to overwrite the stub 
+    // Merge the JavaScript source and generated module map and resolver
+    // configuration files together, making sure to overwrite the stub
     // module-map.js and resolver-configuration.js in the source tree with the
     // generated ones.
     let jsTree = merge([
@@ -268,7 +268,7 @@ export default class GlimmerApp {
     return new RollupWithDependencies(jsTree, {
       inputFiles: ['**/*.js'],
       rollup: {
-        format: 'es',
+        format: 'umd',
         entry: 'index.js',
         dest: 'app.js',
         sourceMap: 'inline'
@@ -316,7 +316,7 @@ export default class GlimmerApp {
   }
 
   htmlTree() {
-    let srcTree = this.trees.srcTree; 
+    let srcTree = this.trees.srcTree;
 
     const htmlName = this.options.outputPaths.app.html;
     const files = [
@@ -345,7 +345,7 @@ export default class GlimmerApp {
     let content: string[] = [];
 
     switch (type) {
-      case 'head': 
+      case 'head':
         this._contentForHead(content, config);
         break;
     }

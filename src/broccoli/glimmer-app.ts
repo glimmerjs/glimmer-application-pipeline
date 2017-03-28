@@ -4,11 +4,13 @@ import ConfigLoader from 'broccoli-config-loader';
 import ConfigReplace from 'broccoli-config-replace';
 
 import Funnel from 'broccoli-funnel';
+import concat from 'broccoli-concat';
 import * as path from 'path';
-import fs from 'fs';
+import * as fs from 'fs';
 import { typescript } from 'broccoli-typescript-compiler';
 import existsSync from 'exists-sync';
 import merge from 'broccoli-merge-trees';
+import compileSass from 'broccoli-sass';
 import assetRev from 'broccoli-asset-rev';
 import uglify from 'broccoli-uglify-sourcemap';
 import ResolutionMapBuilder from '@glimmer/resolution-map-builder';
@@ -185,6 +187,7 @@ export default class GlimmerApp {
     let isProduction = process.env.EMBER_ENV === 'production';
 
     let jsTree = this.javascriptTree();
+    let cssTree = this.cssTree();
     let htmlTree = this.htmlTree();
 
     // Minify the JavaScript in production builds.
@@ -192,7 +195,12 @@ export default class GlimmerApp {
       jsTree = this.minifyTree(jsTree);
     }
 
-    let appTree = merge([jsTree, htmlTree])
+    let trees = [jsTree, htmlTree];
+    if (cssTree) {
+      trees.push(cssTree);
+    }
+    
+    let appTree = merge(trees);
 
     // Fingerprint assets for cache busting in production.
     if (isProduction) {
@@ -313,6 +321,27 @@ export default class GlimmerApp {
       defaultModulePrefix: this.name,
       defaultModuleConfiguration
     });
+  }
+
+  cssTree() {
+    let stylesPath = path.join(this.srcPath, 'ui', 'styles');
+
+    if (fs.existsSync(stylesPath)) {
+      // Compile SASS if app.scss is present
+      // (this works with imports from app.scss)
+      let scssPath = path.join(stylesPath, 'app.scss');
+      if (fs.existsSync(scssPath)) {
+        return compileSass([stylesPath], 'app.scss', 'app.css', {
+          annotation: 'Funnel: scss'
+        });
+      }
+
+      // Otherwise concat all the css in the styles dir
+      return concat(new Funnel(stylesPath, {
+        include: ['**/*.css'],
+        annotation: 'Funnel: css'}), 
+        { outputFile: 'app.css' });
+    }
   }
 
   htmlTree() {

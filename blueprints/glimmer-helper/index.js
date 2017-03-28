@@ -19,7 +19,9 @@ module.exports = {
   },
 
   locals(options) {
-    let functionName = stringUtils.camelize(options.entity.name.replace(/\//g, '-'));
+    let nameParts = options.entity.name.split('/');
+    let baseName = nameParts[nameParts.length - 1];
+    let functionName = stringUtils.camelize(baseName);
     return { functionName };
   },
 };

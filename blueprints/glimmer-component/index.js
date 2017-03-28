@@ -20,7 +20,9 @@ module.exports = {
   },
 
   locals(options) {
-    let className = stringUtils.classify(options.entity.name.replace(/\//g, '-'));
+    let nameParts = options.entity.name.split('/');
+    let baseName = nameParts[nameParts.length - 1];
+    let className = stringUtils.classify(baseName);
     return { className };
   },
 };

@@ -12,7 +12,8 @@
     "preversion": "npm test",
     "prepublish": "npm run build",
     "postpublish": "git push origin master --tags",
-    "test": "ember test"
+    "test": "ember test",
+    "test:node": "mocha node-tests --recursive"
   },
   "repository": "https://github.com/glimmerjs/glimmer-application-pipeline",
   "license": "MIT",
@@ -62,6 +63,8 @@
     "@glimmer/build": "^0.6.1",
     "@types/node": "^7.0.7",
     "ember-cli": "2.13.0-beta.2",
+    "ember-cli-blueprint-test-helpers": "^0.17.1",
+    "mocha": "^3.2.0",
     "typescript": "^2.2.1"
   },
   "ember-addon": {

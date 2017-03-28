@@ -44,7 +44,7 @@ describe('Acceptance: ember generate and destroy glimmer-component', function() 
       .then(() => emberGenerateDestroy(args, (file) => {
         expect(file('src/ui/components/foo/bar/x-baz/component.ts'))
           .to.contain(`import Component from '@glimmer/component';`)
-          .to.contain(`export default class FooBarXBaz extends Component {`);
+          .to.contain(`export default class XBaz extends Component {`);
 
         expect(file('src/ui/components/foo/bar/x-baz/template.hbs'))
           .to.contain(`<div></div>`);

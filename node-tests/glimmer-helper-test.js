@@ -44,7 +44,7 @@ describe('Acceptance: ember generate and destroy glimmer-helper', function() {
     return emberNew()
       .then(() => emberGenerateDestroy(args, (file) => {
         expect(file('src/ui/components/foo/bar/baz/helper.ts'))
-          .to.contain(`export default function fooBarBaz(params) {`);
+          .to.contain(`export default function baz(params) {`);
 
         expect(file('src/ui/components/foo/bar/baz/helper.js')).to.not.exist;
         expect(file('src/ui/components/foo/bar/baz/template.hbs')).to.not.exist;

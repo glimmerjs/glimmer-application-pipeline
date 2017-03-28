@@ -16,6 +16,10 @@ export default {
       defaultType: 'component',
       privateCollections: ['utils']
     },
+    styles: {
+      group: 'ui',
+      unresolvable: true
+    },
     utils: {
       unresolvable: true
     }

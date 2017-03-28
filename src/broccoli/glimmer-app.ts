@@ -22,6 +22,7 @@ import Logger from 'heimdalljs-logger';
 const logger = Logger('@glimmer/application-pipeline:glimmer-app');
 
 import stew from 'broccoli-stew';
+import { TypeScript } from "broccoli-typescript-compiler/lib/plugin";
 const mv = stew.mv;
 const find = stew.find;
 const map = stew.map;
@@ -139,8 +140,14 @@ export default class GlimmerApp {
     const srcPath = this.resolveLocal('src');
     const srcTree = existsSync(srcPath) ? new WatchedDir(srcPath) : null;
 
-    const nodeModulesPath = this.resolveLocal('node_modules');
-    const nodeModulesTree = existsSync(srcPath) ? new UnwatchedDir(nodeModulesPath) : null;
+    const nodeModulesTree = new Funnel(new UnwatchedDir(this.project.root), {
+      srcDir: 'node_modules/@glimmer',
+      destDir: 'node_modules/@glimmer',
+      include: [
+        '**/*.d.ts',
+        '**/package.json'
+      ]
+    });
 
     return {
       srcTree,
@@ -209,12 +216,6 @@ export default class GlimmerApp {
       destDir: 'src'
     });
 
-    // Also grab node_modules, so TypeScript and Rollup can find dependencies
-    // there.
-    nodeModulesTree = find(nodeModulesTree, {
-      destDir: 'node_modules'
-    });
-
     // Compile the TypeScript and Handlebars files into JavaScript
     const compiledHandlebarsTree = this.compiledHandlebarsTree(srcTree);
     const compiledTypeScriptTree = this.compiledTypeScriptTree(srcTree, nodeModulesTree)
@@ -245,10 +246,12 @@ export default class GlimmerApp {
     return this.rollupTree(jsTree);
   }
 
-  compiledTypeScriptTree(srcTree, nodeModulesTree) {
+  compiledTypeScriptTree(srcTree, nodeModulesTree): TypeScript {
     const tsOptions = this.tsOptions();
 
-    return typescript(srcTree, tsOptions);
+    let inputTrees = merge([nodeModulesTree, srcTree]);
+
+    return typescript(inputTrees, tsOptions);
   }
 
   compiledHandlebarsTree(srcTree) {

@@ -20,7 +20,7 @@ module.exports = {
   },
 
   locals(options) {
-    let className = `${stringUtils.classify(options.entity.name)}Component`;
+    let className = stringUtils.classify(options.entity.name);
     return { className };
   },
 };

@@ -19,6 +19,7 @@ module.exports = {
   },
 
   locals(options) {
-    return { };
+    let functionName = stringUtils.camelize(options.entity.name);
+    return { functionName };
   },
 };

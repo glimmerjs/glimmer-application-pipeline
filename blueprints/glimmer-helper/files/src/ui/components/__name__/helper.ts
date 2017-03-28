@@ -1,2 +1,2 @@
-export default function(params) {
+export default function <%= functionName %>(params) {
 };

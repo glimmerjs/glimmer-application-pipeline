@@ -1,6 +1,7 @@
 node_modules
 test
 tests
+node-tests
 tmp
 testem.json
 tsconfig.*

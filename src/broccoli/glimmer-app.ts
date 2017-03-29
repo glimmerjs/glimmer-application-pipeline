@@ -188,6 +188,7 @@ export default class GlimmerApp {
 
     let jsTree = this.javascriptTree();
     let cssTree = this.cssTree();
+    let publicTree = this.publicTree();
     let htmlTree = this.htmlTree();
 
     // Minify the JavaScript in production builds.
@@ -198,6 +199,9 @@ export default class GlimmerApp {
     let trees = [jsTree, htmlTree];
     if (cssTree) {
       trees.push(cssTree);
+    }
+    if (publicTree) {
+      trees.push(publicTree);
     }
     
     let appTree = merge(trees);
@@ -341,6 +345,16 @@ export default class GlimmerApp {
         include: ['**/*.css'],
         annotation: 'Funnel: css'}), 
         { outputFile: 'app.css' });
+    }
+  }
+
+  publicTree() {
+    let publicPath = 'public';
+
+    if (fs.existsSync(publicPath)) {
+      return new Funnel(publicPath, {
+        annotation: 'Funnel: public'
+      });
     }
   }
 

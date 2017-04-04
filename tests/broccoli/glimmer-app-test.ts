@@ -47,6 +47,38 @@ describe('glimmer-app', function() {
         new GlimmerApp({});
       }).to.throw(/must pass through the default arguments/)
     });
+
+    describe('env', function() {
+      const ORIGINAL_EMBER_ENV = process.env.EMBER_ENV;
+
+      beforeEach(function() {
+        delete process.env.EMBER_ENV;
+      });
+
+      afterEach(function() {
+        process.env.EMBER_ENV = ORIGINAL_EMBER_ENV;
+      });
+
+      it('sets an `env`', function() {
+        let app = createApp();
+
+        expect(app.env).to.be.defined;
+      })
+
+      it('sets an `env` to `development` if process.env.EMBER_ENV is undefined', function() {
+        let app = createApp();
+
+        expect(app.env).to.equal('development');
+      })
+
+      it('sets an `env` to process.env.EMBER_ENV if present', function() {
+        process.env.EMBER_ENV = 'test';
+
+        let app = createApp();
+
+        expect(app.env).to.equal('test');
+      })
+    })
   });
 
   describe('htmlTree', function() {

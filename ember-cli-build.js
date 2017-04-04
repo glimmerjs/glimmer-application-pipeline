@@ -8,11 +8,11 @@ module.exports = function() {
   let tsconfigPath = path.join(__dirname, 'tsconfig.json');
   let projectPath = __dirname;
 
-  let srcPath = path.join(projectPath, 'src');
+  let libPath = path.join(projectPath, 'lib');
   let testsPath = path.join(projectPath, 'tests');
 
   let srcTrees = [
-    new Funnel(srcPath, { destDir: 'src' }),
+    new Funnel(libPath, { destDir: 'lib' }),
     new Funnel(testsPath, { destDir: 'tests' })
   ];
 

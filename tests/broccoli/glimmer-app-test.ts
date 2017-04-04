@@ -9,7 +9,7 @@ const Project = require('ember-cli/lib/models/project');
 
 const { stripIndent } = require('common-tags');
 
-const GlimmerApp = require('../../src').GlimmerApp;
+const GlimmerApp = require('../../lib').GlimmerApp;
 
 const expect = require('../helpers/chai').expect;
 

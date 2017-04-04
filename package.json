@@ -12,7 +12,8 @@
     "preversion": "npm test",
     "prepublish": "npm run build",
     "postpublish": "git push origin master --tags",
-    "test": "ember test",
+    "pretest": "ember build",
+    "test": "mocha dist/tests --recursive",
     "start": "ember test --server"
   },
   "repository": "https://github.com/glimmerjs/glimmer-application-pipeline",

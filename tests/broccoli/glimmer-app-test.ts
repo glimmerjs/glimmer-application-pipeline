@@ -9,7 +9,7 @@ const Project = require('ember-cli/lib/models/project');
 
 const { stripIndent } = require('common-tags');
 
-const GlimmerApp = require('../../lib').GlimmerApp;
+import GlimmerApp, { GlimmerAppOptions } from '../../lib/broccoli/glimmer-app';
 
 const expect = require('../helpers/chai').expect;
 
@@ -24,7 +24,7 @@ describe('glimmer-app', function() {
     return input.dispose();
   });
 
-  function createApp(options = {}) {
+  function createApp(options: GlimmerAppOptions = {}) {
     let pkg = { name: 'glimmer-app-test' };
 
     let cli = new MockCLI();
@@ -38,13 +38,15 @@ describe('glimmer-app', function() {
   describe('constructor', function() {
     it('throws an error if no arguments are provided', function() {
       expect(() => {
-        new GlimmerApp();
+        const AnyGlimmerApp = GlimmerApp as any;
+        new AnyGlimmerApp();
       }).to.throw(/must pass through the default arguments/)
     });
 
     it('throws an error if project is not passed through', function() {
       expect(() => {
-        new GlimmerApp({});
+        const AnyGlimmerApp = GlimmerApp as any;
+        new AnyGlimmerApp({});
       }).to.throw(/must pass through the default arguments/)
     });
 

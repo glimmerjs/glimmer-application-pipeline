@@ -64,8 +64,15 @@ const DEFAULT_TS_OPTIONS = {
   }
 };
 
+export interface EmberCLIDefaults {
+  project: Project
+}
+
 export interface GlimmerAppOptions {
-  outputPaths: any;
+  outputPaths?: any;
+  trees?: {
+    src?: string | Tree
+  }
 }
 
 export interface Addon {
@@ -110,25 +117,21 @@ export default class GlimmerApp {
   protected trees: Trees;
   protected srcPath: string;
 
-  constructor(defaults, options) {
+  constructor(defaults: EmberCLIDefaults, options: GlimmerAppOptions = {}) {
     let missingProjectMessage = 'You must pass through the default arguments passed into your ember-cli-build.js file when constructing a new GlimmerApp';
     if (arguments.length === 0) {
       throw new Error(missingProjectMessage);
-    } else if (arguments.length === 1) {
-      options = defaults;
-    } else {
-      defaultsDeep(options, defaults);
     }
 
-    if (!options.project) {
+    if (!defaults.project) {
       throw new Error(missingProjectMessage);
     }
 
     options = this.options = defaultsDeep(options, DEFAULT_CONFIG);
 
     this.env = process.env.EMBER_ENV || 'development';
-    this.project = options.project;
-    this.name = options.name || this.project.name();
+    this.project = defaults.project;
+    this.name = this.project.name();
     this.trees = this.buildTrees();
 
     let srcPath = options.srcPath || 'src';

@@ -16,14 +16,15 @@ const assetRev = require('broccoli-asset-rev');
 const uglify = require('broccoli-uglify-sourcemap');
 const ResolutionMapBuilder = require('@glimmer/resolution-map-builder');
 const ResolverConfigurationBuilder = require('@glimmer/resolver-configuration-builder');
-const RollupWithDependencies = require('./rollup-with-dependencies');
-const GlimmerTemplatePrecompiler = require('./glimmer-template-precompiler');
-const defaultModuleConfiguration = require('./default-module-configuration');
 const BroccoliSource = require('broccoli-source');
 const WatchedDir = BroccoliSource.WatchedDir;
 const UnwatchedDir = BroccoliSource.UnwatchedDir;
 
-const Logger = require('heimdalljs-logger');
+import RollupWithDependencies from './rollup-with-dependencies';
+import GlimmerTemplatePrecompiler from './glimmer-template-precompiler';
+import defaultModuleConfiguration from './default-module-configuration';
+
+//const Logger = require('heimdalljs-logger');
 //const logger = Logger('@glimmer/application-pipeline:glimmer-app');
 
 const stew  = require('broccoli-stew');

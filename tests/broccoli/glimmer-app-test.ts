@@ -35,6 +35,20 @@ describe('glimmer-app', function() {
     }, options);
   }
 
+  describe('constructor', function() {
+    it('throws an error if no arguments are provided', function() {
+      expect(() => {
+        new GlimmerApp();
+      }).to.throw(/must pass through the default arguments/)
+    });
+
+    it('throws an error if project is not passed through', function() {
+      expect(() => {
+        new GlimmerApp({});
+      }).to.throw(/must pass through the default arguments/)
+    });
+  });
+
   describe('htmlTree', function() {
     it('emits index.html', async function () {
       input.write({

@@ -111,12 +111,17 @@ export default class GlimmerApp {
   protected srcPath: string;
 
   constructor(defaults, options) {
+    let missingProjectMessage = 'You must pass through the default arguments passed into your ember-cli-build.js file when constructing a new GlimmerApp';
     if (arguments.length === 0) {
-      options = {};
+      throw new Error(missingProjectMessage);
     } else if (arguments.length === 1) {
       options = defaults;
     } else {
       defaultsDeep(options, defaults);
+    }
+
+    if (!options.project) {
+      throw new Error(missingProjectMessage);
     }
 
     options = this.options = defaultsDeep(options, DEFAULT_CONFIG);

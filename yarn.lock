@@ -103,6 +103,10 @@
   version "1.16.31"
   resolved "https://registry.yarnpkg.com/@types/qunit/-/qunit-1.16.31.tgz#169ba79df56f25f40556c39c544e018bb6390792"
 
+"@types/rsvp@^3.0.0":
+  version "3.3.0"
+  resolved "https://registry.yarnpkg.com/@types/rsvp/-/rsvp-3.3.0.tgz#20c97372ebf32bda6a4817f7182ec672893947e6"
+
 abbrev@1:
   version "1.1.0"
   resolved "https://registry.yarnpkg.com/abbrev/-/abbrev-1.1.0.tgz#d0554c2256636e2f56e7c2e5ad183f859428d81f"
@@ -1296,6 +1300,19 @@ broccoli-string-replace@^0.1.1:
     broccoli-persistent-filter "^1.1.5"
     minimatch "^3.0.3"
 
+broccoli-test-helper@^1.1.0:
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/broccoli-test-helper/-/broccoli-test-helper-1.1.0.tgz#7ec8a5efc33e2299b6592ca066f6f58645480bda"
+  dependencies:
+    "@types/rsvp" "^3.0.0"
+    broccoli "^1.1.0"
+    fixturify "^0.3.2"
+    fs-tree-diff "^0.5.6"
+    mktemp "^0.4.0"
+    rimraf "^2.5.4"
+    rsvp "^3.3.3"
+    walk-sync "^0.3.1"
+
 broccoli-typescript-compiler@^1.0.1:
   version "1.0.1"
   resolved "https://registry.yarnpkg.com/broccoli-typescript-compiler/-/broccoli-typescript-compiler-1.0.1.tgz#648055f23f4257a1ec434a455c77f5e43bd28d2f"
@@ -1459,7 +1476,7 @@ chai-files@^1.0.0, chai-files@^1.1.0:
   dependencies:
     assertion-error "^1.0.1"
 
-chai@^3.3.0:
+chai@^3.3.0, chai@^3.5.0:
   version "3.5.0"
   resolved "https://registry.yarnpkg.com/chai/-/chai-3.5.0.tgz#4d02637b067fe958bdbfdd3a40ec56fef7373247"
   dependencies:
@@ -2617,6 +2634,12 @@ fireworm@^0.7.0:
     lodash.flatten "^3.0.2"
     minimatch "^3.0.2"
 
+fixturify@^0.3.2:
+  version "0.3.3"
+  resolved "https://registry.yarnpkg.com/fixturify/-/fixturify-0.3.3.tgz#842eaa120564c9881e099ed06dc082a81e97fa71"
+  dependencies:
+    fs-extra "^0.30.0"
+
 for-in@^1.0.1:
   version "1.0.2"
   resolved "https://registry.yarnpkg.com/for-in/-/for-in-1.0.2.tgz#81068d295a8142ec0ac726c6e2200c30fb6d5e80"
@@ -3204,6 +3227,10 @@ is-obj@^1.0.0:
   version "1.0.1"
   resolved "https://registry.yarnpkg.com/is-obj/-/is-obj-1.0.1.tgz#3e4729ac1f5fde025cd7d83a896dab9f4f67db0f"
 
+is-plain-obj@^1.0.0:
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/is-plain-obj/-/is-plain-obj-1.1.0.tgz#71a50c8429dfca773c92a390a4a03b39fcd51d3e"
+
 is-posix-bracket@^0.1.0:
   version "0.1.1"
   resolved "https://registry.yarnpkg.com/is-posix-bracket/-/is-posix-bracket-0.1.1.tgz#3334dc79774368e92f016e6fbc0a88f5cd6e6bc4"
@@ -3215,6 +3242,10 @@ is-primitive@^2.0.0:
 is-promise@^2.1.0:
   version "2.1.0"
   resolved "https://registry.yarnpkg.com/is-promise/-/is-promise-2.1.0.tgz#79a2a9ece7f096e80f36d2b2f3bc16c1ff4bf3fa"
+
+is-regexp@^1.0.0:
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/is-regexp/-/is-regexp-1.0.0.tgz#fd2d883545c46bac5a633e7b9a09e87fa2cb5069"
 
 is-stream@^1.0.1, is-stream@^1.1.0:
   version "1.1.0"
@@ -3623,7 +3654,7 @@ lodash@^3.10.0, lodash@^3.10.1, lodash@^3.9.3:
   version "3.10.1"
   resolved "https://registry.yarnpkg.com/lodash/-/lodash-3.10.1.tgz#5bf45e8e49ba4189e17d482789dfd15bd140b7b6"
 
-lodash@^4.0.0, lodash@^4.16.1, lodash@^4.2.0, lodash@^4.3.0, lodash@^4.6.1:
+lodash@^4.0.0, lodash@^4.15.0, lodash@^4.16.1, lodash@^4.17.2, lodash@^4.2.0, lodash@^4.3.0, lodash@^4.6.1:
   version "4.17.4"
   resolved "https://registry.yarnpkg.com/lodash/-/lodash-4.17.4.tgz#78203a4d1c328ae1d86dca6460e369b57f4055ae"
 
@@ -3825,7 +3856,7 @@ mkdirp@^0.3.5:
   version "0.3.5"
   resolved "https://registry.yarnpkg.com/mkdirp/-/mkdirp-0.3.5.tgz#de3e5f8961c88c787ee1368df849ac4413eca8d7"
 
-mktemp@~0.4.0:
+mktemp@^0.4.0, mktemp@~0.4.0:
   version "0.4.0"
   resolved "https://registry.yarnpkg.com/mktemp/-/mktemp-0.4.0.tgz#6d0515611c8a8c84e484aa2000129b98e981ff0b"
 
@@ -4283,6 +4314,12 @@ q@^1.1.2:
 qs@6.4.0, qs@^6.2.0, qs@~6.4.0:
   version "6.4.0"
   resolved "https://registry.yarnpkg.com/qs/-/qs-6.4.0.tgz#13e26d28ad6b0ffaa91312cd3bf708ed351e7233"
+
+quibble@^0.5.0:
+  version "0.5.0"
+  resolved "https://registry.yarnpkg.com/quibble/-/quibble-0.5.0.tgz#e7f440094192eba2b0657186d12ed7250708792b"
+  dependencies:
+    lodash "^4.17.2"
 
 quick-temp@^0.1.0, quick-temp@^0.1.2, quick-temp@^0.1.3, quick-temp@^0.1.5, quick-temp@^0.1.8:
   version "0.1.8"
@@ -4906,6 +4943,13 @@ string_decoder@0.10, string_decoder@~0.10.x:
   version "0.10.31"
   resolved "https://registry.yarnpkg.com/string_decoder/-/string_decoder-0.10.31.tgz#62e203bc41766c6c28c9fc84301dab1c5310fa94"
 
+stringify-object-es5@^2.5.0:
+  version "2.5.0"
+  resolved "https://registry.yarnpkg.com/stringify-object-es5/-/stringify-object-es5-2.5.0.tgz#057c3c9a90a127339bb9d1704a290bb7bd0a1ec5"
+  dependencies:
+    is-plain-obj "^1.0.0"
+    is-regexp "^1.0.0"
+
 stringmap@~0.2.2:
   version "0.2.2"
   resolved "https://registry.yarnpkg.com/stringmap/-/stringmap-0.2.2.tgz#556c137b258f942b8776f5b2ef582aa069d7d1b1"
@@ -5018,6 +5062,15 @@ temp@0.8.3:
   dependencies:
     os-tmpdir "^1.0.0"
     rimraf "~2.2.6"
+
+testdouble@^2.1.2:
+  version "2.1.2"
+  resolved "https://registry.yarnpkg.com/testdouble/-/testdouble-2.1.2.tgz#8a376c5cb9b2c9cea90780b874168aa5b6eeb8a8"
+  dependencies:
+    lodash "^4.15.0"
+    quibble "^0.5.0"
+    resolve "^1.3.2"
+    stringify-object-es5 "^2.5.0"
 
 testem@^1.13.0, testem@^1.15.0:
   version "1.15.0"

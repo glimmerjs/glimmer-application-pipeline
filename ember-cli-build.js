@@ -1,33 +1,26 @@
 "use strict";
 
-const build = require('@glimmer/build');
+const path = require('path');
+const Funnel = require('broccoli-funnel');
+const compileTypescript = require('@glimmer/build/lib/compile-typescript');
 
 module.exports = function() {
-  return build({
-    external: [
-      'broccoli-config-loader',
-      'broccoli-config-replace',
-      'broccoli-funnel',
-      'broccoli-concat',
-      'path',
-      'fs',
-      'lodash.defaultsdeep',
-      'broccoli-typescript-compiler',
-      'exists-sync',
-      'broccoli-merge-trees',
-      'broccoli-sass',
-      'broccoli-asset-rev',
-      'broccoli-uglify-sourcemap',
-      '@glimmer/resolution-map-builder',
-      '@glimmer/resolver-configuration-builder',
-      'broccoli-rollup',
-      'rollup-plugin-node-resolve',
-      'rollup-plugin-babel',
-      'broccoli-persistent-filter',
-      '@glimmer/compiler',
-      'broccoli-source',
-      'heimdalljs-logger',
-      'broccoli-stew'
-    ]
-  });
-}
+  let tsconfigPath = path.join(__dirname, 'tsconfig.json');
+  let projectPath = __dirname;
+
+  let srcPath = path.join(projectPath, 'src');
+  let testsPath = path.join(projectPath, 'tests');
+
+  let srcTrees = [
+    new Funnel(srcPath, { destDir: 'src' }),
+    new Funnel(testsPath, { destDir: 'tests' })
+  ];
+
+  let compiledTypescript = compileTypescript(
+    tsconfigPath,
+    projectPath,
+    srcTrees
+  );
+
+  return compiledTypescript;
+};

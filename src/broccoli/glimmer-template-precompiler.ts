@@ -1,5 +1,5 @@
-import Filter from 'broccoli-persistent-filter';
-import { precompile } from '@glimmer/compiler';
+const Filter = require('broccoli-persistent-filter');
+const precompile = require('@glimmer/compiler').precompile;
 
 interface TemplateMeta {
   '<template-meta>': true;

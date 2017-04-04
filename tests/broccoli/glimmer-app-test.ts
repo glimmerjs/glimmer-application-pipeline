@@ -124,7 +124,7 @@ describe('glimmer-app', function() {
         },
       });
 
-      let app = createApp();
+      let app = createApp() as any;
       let output = await buildOutput(app.htmlTree());
 
       expect(output.read()).to.deep.equal({
@@ -168,6 +168,8 @@ describe('glimmer-app', function() {
   });
 
   describe('cssTree', function() {
+    it('allows passing custom `src` tree');
+
     it('returns null when no styles are present', async function () {
       input.write({
         'app': {},
@@ -231,5 +233,12 @@ describe('glimmer-app', function() {
         'app.css': `body { color: #333; }`
       });
     });
+  });
+
+  describe('toTree', function() {
+    it('transpiles templates');
+    it('transpiles javascript');
+    it('builds a module map');
+    it('includes resolver config');
   });
 });

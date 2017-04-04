@@ -96,7 +96,11 @@
   dependencies:
     "@glimmer/util" "^0.23.0-alpha.11"
 
-"@types/node@^7.0.7":
+"@types/mocha@^2.2.40":
+  version "2.2.40"
+  resolved "https://registry.yarnpkg.com/@types/mocha/-/mocha-2.2.40.tgz#9811dd800ece544cd84b5b859917bf584a150c4c"
+
+"@types/node@^7.0.12":
   version "7.0.12"
   resolved "https://registry.yarnpkg.com/@types/node/-/node-7.0.12.tgz#ae5f67a19c15f752148004db07cbbb372e69efc9"
 

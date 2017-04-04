@@ -10,7 +10,7 @@
     "declaration": true,
     "newLine": "LF",
     "outDir": "dist",
-    "types": ["qunit"],
+    "types": ["mocha","node"],
     "lib": [
       "dom",
       "es2015"

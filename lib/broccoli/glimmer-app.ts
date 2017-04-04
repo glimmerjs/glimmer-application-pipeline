@@ -116,7 +116,6 @@ export default class GlimmerApp {
   public env: 'production' | 'development' | 'test';
 
   protected trees: Trees;
-  protected srcPath: string;
 
   constructor(defaults: EmberCLIDefaults, options: GlimmerAppOptions = {}) {
     let missingProjectMessage = 'You must pass through the default arguments passed into your ember-cli-build.js file when constructing a new GlimmerApp';
@@ -134,9 +133,6 @@ export default class GlimmerApp {
     this.project = defaults.project;
     this.name = this.project.name();
     this.trees = this.buildTrees();
-
-    let srcPath = options.srcPath || 'src';
-    this.srcPath = this.resolveLocal(srcPath);
   }
 
   private _configReplacePatterns() {
@@ -339,7 +335,11 @@ export default class GlimmerApp {
   }
 
   private cssTree() {
-    let stylesPath = path.join(this.srcPath, 'ui', 'styles');
+    // should really make SASS support to be opt-in, so that
+    // we can properly honor the `GlimmerAppOptions.trees.src`
+    // abstraction here, but for now we still require `src` to be a
+    // "real" path on disk that we check
+    let stylesPath = path.join(this.resolveLocal('src'), 'ui', 'styles');
 
     if (fs.existsSync(stylesPath)) {
       // Compile SASS if app.scss is present

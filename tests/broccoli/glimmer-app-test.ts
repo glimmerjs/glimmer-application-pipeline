@@ -137,4 +137,70 @@ describe('glimmer-app', function() {
       });
     });
   });
+
+  describe('cssTree', function() {
+    it('returns null when no styles are present', async function () {
+      input.write({
+        'app': {},
+        'src': {
+          'ui': {
+            'index.html': 'src',
+          },
+        },
+        'config': {},
+      });
+
+      let app = createApp() as any;
+      let output = app.cssTree();
+
+      expect(output).to.be.undefined;
+    });
+
+    it('compiles sass', async function () {
+      input.write({
+        'app': {},
+        'src': {
+          'ui': {
+            'styles': {
+              'app.scss': stripIndent`
+                $font-stack: Helvetica, sans-serif;
+                $primary-color: #333;
+
+                body { font: 100% $font-stack; color: $primary-color; }
+              `,
+            },
+          }
+        },
+        'config': {},
+      });
+
+      let app = createApp() as any;
+      let output = await buildOutput(app.cssTree());
+
+      expect(output.read()).to.deep.equal({
+        'app.css': `body {\n  font: 100% Helvetica, sans-serif;\n  color: #333; }\n`,
+      });
+    });
+
+    it('passes through css', async function () {
+      input.write({
+        'app': {},
+        'src': {
+          'ui': {
+            'styles': {
+              'app.css': `body { color: #333; }`
+            },
+          }
+        },
+        'config': {},
+      });
+
+      let app = createApp() as any;
+      let output = await buildOutput(app.cssTree());
+
+      expect(output.read()).to.deep.equal({
+        'app.css': `body { color: #333; }`
+      });
+    });
+  });
 });

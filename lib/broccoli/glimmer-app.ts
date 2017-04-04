@@ -39,13 +39,10 @@ const DEFAULT_CONFIG = {
     }
   },
   configPath: './config/environment',
-  trees: {
-    app: 'src',
-    styles: 'src/ui/styles'
-  },
+  trees: { },
   jshintrc: {
     tests: 'tests',
-    app: 'src'
+    src: 'src'
   }
 };
 
@@ -92,8 +89,8 @@ export interface Project {
 }
 
 export interface Trees {
-  srcTree: Tree;
-  nodeModulesTree: Tree;
+  src: Tree;
+  nodeModules: Tree;
 }
 
 export interface Tree {
@@ -171,8 +168,8 @@ export default class GlimmerApp {
     });
 
     return {
-      srcTree,
-      nodeModulesTree
+      src: srcTree,
+      nodeModules: nodeModulesTree
     }
   }
 
@@ -240,16 +237,11 @@ export default class GlimmerApp {
   }
 
   private javascriptTree() {
-    let { srcTree, nodeModulesTree } = this.trees;
-
-    // Grab the app's `src` directory.
-    srcTree = find(srcTree, {
-      destDir: 'src'
-    });
+    let { src, nodeModules } = this.trees;
 
     // Compile the TypeScript and Handlebars files into JavaScript
-    const compiledHandlebarsTree = this.compiledHandlebarsTree(srcTree);
-    const compiledTypeScriptTree = this.compiledTypeScriptTree(srcTree, nodeModulesTree)
+    const compiledHandlebarsTree = this.compiledHandlebarsTree(src);
+    const compiledTypeScriptTree = this.compiledTypeScriptTree(src, nodeModules)
 
     // Remove top-most `src` directory so module names don't include it.
     const resolvableTree = find(merge([compiledTypeScriptTree, compiledHandlebarsTree]), {
@@ -382,17 +374,17 @@ export default class GlimmerApp {
   }
 
   private htmlTree() {
-    let srcTree = this.trees.srcTree;
+    let srcTree = this.trees.src;
 
     const htmlName = this.options.outputPaths.app.html;
     const files = [
-      'ui/index.html'
+      'src/ui/index.html'
     ];
 
     const index = new Funnel(srcTree, {
       files,
       getDestinationPath(relativePath) {
-        if (relativePath === 'ui/index.html') {
+        if (relativePath === 'src/ui/index.html') {
           relativePath = htmlName;
         }
         return relativePath;

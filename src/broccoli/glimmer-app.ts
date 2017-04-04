@@ -133,7 +133,7 @@ export default class GlimmerApp {
   _configReplacePatterns() {
     return [{
       match: /\{\{rootURL\}\}/g,
-      replacement: () => '',
+      replacement: (config) => config.rootURL || '',
     }, {
       match: /\{\{content-for ['"](.+)["']\}\}/g,
       replacement: this.contentFor.bind(this)

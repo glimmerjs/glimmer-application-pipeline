@@ -130,7 +130,7 @@ export default class GlimmerApp {
     this.srcPath = this.resolveLocal(srcPath);
   }
 
-  _configReplacePatterns() {
+  private _configReplacePatterns() {
     return [{
       match: /\{\{rootURL\}\}/g,
       replacement: (config) => config.rootURL || '',
@@ -140,7 +140,7 @@ export default class GlimmerApp {
     }];
   }
 
-  buildTrees(): Trees {
+  private buildTrees(): Trees {
     const srcPath = this.resolveLocal('src');
     const srcTree = existsSync(srcPath) ? new WatchedDir(srcPath) : null;
 
@@ -185,7 +185,7 @@ export default class GlimmerApp {
    *
    * @param options
    */
-  toTree(options) {
+  public toTree(options) {
     let isProduction = process.env.EMBER_ENV === 'production';
 
     let jsTree = this.javascriptTree();
@@ -222,7 +222,7 @@ export default class GlimmerApp {
     return appTree;
   }
 
-  javascriptTree() {
+  private javascriptTree() {
     let { srcTree, nodeModulesTree } = this.trees;
 
     // Grab the app's `src` directory.
@@ -260,7 +260,7 @@ export default class GlimmerApp {
     return this.rollupTree(jsTree);
   }
 
-  compiledTypeScriptTree(srcTree, nodeModulesTree): TypeScript {
+  private compiledTypeScriptTree(srcTree, nodeModulesTree): TypeScript {
     const tsOptions = this.tsOptions();
 
     let inputTrees = merge([nodeModulesTree, srcTree]);
@@ -268,7 +268,7 @@ export default class GlimmerApp {
     return typescript(inputTrees, tsOptions);
   }
 
-  compiledHandlebarsTree(srcTree) {
+  private compiledHandlebarsTree(srcTree) {
     let hbsTree = find(srcTree, {
       include: ['src/**/*.hbs']
     });
@@ -278,7 +278,7 @@ export default class GlimmerApp {
     });
   }
 
-  rollupTree(jsTree) {
+  private rollupTree(jsTree) {
     return new RollupWithDependencies(jsTree, {
       inputFiles: ['**/*.js'],
       rollup: {
@@ -290,7 +290,7 @@ export default class GlimmerApp {
     });
   }
 
-  minifyTree(jsTree) {
+  private minifyTree(jsTree) {
     return uglify(jsTree, {
       compress: {
         screw_ie8: true,
@@ -301,7 +301,7 @@ export default class GlimmerApp {
     });
   }
 
-  rewriteConfigEnvironment(src) {
+  private rewriteConfigEnvironment(src) {
     return new ConfigReplace(src, this._configTree(), {
       configPath: this._configPath(),
       files: [ 'config/environment.js' ],
@@ -309,7 +309,7 @@ export default class GlimmerApp {
     });
   }
 
-  buildResolutionMap(src) {
+  private buildResolutionMap(src) {
     src = find(src, {
       exclude: ['config/**/*']
     });
@@ -321,7 +321,7 @@ export default class GlimmerApp {
     });
   }
 
-  buildResolverConfiguration() {
+  private buildResolverConfiguration() {
     return new ResolverConfigurationBuilder(this._configTree(), {
       configPath: this._configPath(),
       defaultModulePrefix: this.name,
@@ -329,7 +329,7 @@ export default class GlimmerApp {
     });
   }
 
-  cssTree() {
+  private cssTree() {
     let stylesPath = path.join(this.srcPath, 'ui', 'styles');
 
     if (fs.existsSync(stylesPath)) {
@@ -350,7 +350,7 @@ export default class GlimmerApp {
     }
   }
 
-  publicTree() {
+  private publicTree() {
     let publicPath = 'public';
 
     if (fs.existsSync(publicPath)) {
@@ -360,7 +360,7 @@ export default class GlimmerApp {
     }
   }
 
-  htmlTree() {
+  private htmlTree() {
     let srcTree = this.trees.srcTree;
 
     const htmlName = this.options.outputPaths.app.html;
@@ -386,7 +386,7 @@ export default class GlimmerApp {
     });
   }
 
-  contentFor(config, match: RegExp, type: string) {
+  private contentFor(config, match: RegExp, type: string) {
     let content: string[] = [];
 
     switch (type) {

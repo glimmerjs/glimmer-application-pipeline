@@ -17,9 +17,8 @@
   },
   "repository": "https://github.com/glimmerjs/glimmer-application-pipeline",
   "license": "MIT",
-  "main": "dist/commonjs/es5/index.js",
-  "module": "dist/modules/es2017/index.js",
-  "types": "dist/types/index.d.ts",
+  "main": "dist/src/index.js",
+  "types": "dist/src/index.d.ts",
   "keywords": [
     "glimmer",
     "ember-addon"

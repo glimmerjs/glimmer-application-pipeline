@@ -1,8 +1,8 @@
-import Rollup from 'broccoli-rollup';
-import nodeResolve from 'rollup-plugin-node-resolve';
-import babel from 'rollup-plugin-babel';
-import * as fs from 'fs';
-import * as path from 'path';
+const Rollup = require('broccoli-rollup');
+const nodeResolve = require('rollup-plugin-node-resolve');
+const babel = require('rollup-plugin-babel');
+const fs = require('fs');
+const path = require('path');
 
 class RollupWithDependencies extends Rollup {
   rollupOptions: any;

@@ -1,33 +1,35 @@
-import defaultsDeep from 'lodash.defaultsdeep';
+'use strict';
+const defaultsDeep = require('lodash.defaultsdeep');
 
-import ConfigLoader from 'broccoli-config-loader';
-import ConfigReplace from 'broccoli-config-replace';
+const ConfigLoader = require('broccoli-config-loader');
+const ConfigReplace = require('broccoli-config-replace');
 
-import Funnel from 'broccoli-funnel';
-import concat from 'broccoli-concat';
-import * as path from 'path';
-import * as fs from 'fs';
-import { typescript } from 'broccoli-typescript-compiler';
-import existsSync from 'exists-sync';
-import merge from 'broccoli-merge-trees';
-import compileSass from 'broccoli-sass';
-import assetRev from 'broccoli-asset-rev';
-import uglify from 'broccoli-uglify-sourcemap';
-import ResolutionMapBuilder from '@glimmer/resolution-map-builder';
-import ResolverConfigurationBuilder from '@glimmer/resolver-configuration-builder';
-import RollupWithDependencies from './rollup-with-dependencies';
-import GlimmerTemplatePrecompiler from './glimmer-template-precompiler';
-import defaultModuleConfiguration from './default-module-configuration';
-import { WatchedDir, UnwatchedDir } from 'broccoli-source';
+const Funnel = require('broccoli-funnel');
+const concat = require('broccoli-concat');
+const path  = require('path');
+const fs = require('fs');
+const typescript = require('broccoli-typescript-compiler').typescript;
+const existsSync = require('exists-sync');
+const merge = require('broccoli-merge-trees');
+const compileSass = require('broccoli-sass');
+const assetRev = require('broccoli-asset-rev');
+const uglify = require('broccoli-uglify-sourcemap');
+const ResolutionMapBuilder = require('@glimmer/resolution-map-builder');
+const ResolverConfigurationBuilder = require('@glimmer/resolver-configuration-builder');
+const RollupWithDependencies = require('./rollup-with-dependencies');
+const GlimmerTemplatePrecompiler = require('./glimmer-template-precompiler');
+const defaultModuleConfiguration = require('./default-module-configuration');
+const BroccoliSource = require('broccoli-source');
+const WatchedDir = BroccoliSource.WatchedDir;
+const UnwatchedDir = BroccoliSource.UnwatchedDir;
 
-import Logger from 'heimdalljs-logger';
-const logger = Logger('@glimmer/application-pipeline:glimmer-app');
+const Logger = require('heimdalljs-logger');
+//const logger = Logger('@glimmer/application-pipeline:glimmer-app');
 
-import stew from 'broccoli-stew';
-import { TypeScript } from "broccoli-typescript-compiler/lib/plugin";
-const mv = stew.mv;
+const stew  = require('broccoli-stew');
 const find = stew.find;
-const map = stew.map;
+
+import { TypeScript } from 'broccoli-typescript-compiler/lib/plugin';
 
 const DEFAULT_CONFIG = {
   outputPaths: {
@@ -203,7 +205,7 @@ export default class GlimmerApp {
     if (publicTree) {
       trees.push(publicTree);
     }
-    
+
     let appTree = merge(trees);
 
     // Fingerprint assets for cache busting in production.
@@ -343,7 +345,7 @@ export default class GlimmerApp {
       // Otherwise concat all the css in the styles dir
       return concat(new Funnel(stylesPath, {
         include: ['**/*.css'],
-        annotation: 'Funnel: css'}), 
+        annotation: 'Funnel: css'}),
         { outputFile: 'app.css' });
     }
   }

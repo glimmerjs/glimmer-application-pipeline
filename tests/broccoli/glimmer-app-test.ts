@@ -136,6 +136,35 @@ describe('glimmer-app', function() {
               </body>`
       });
     });
+
+    it('allows passing custom `src` tree', async function () {
+      input.write({
+        'app': {},
+        'derp': {
+          'ui': {
+            'index.html': 'derp'
+          }
+        },
+        'src': {
+          'ui': {
+            'index.html': 'src',
+          },
+        },
+        'config': {},
+      });
+
+      let app = createApp({
+        trees: {
+          src: 'derp'
+        }
+      }) as any;
+
+      let output = await buildOutput(app.htmlTree());
+
+      expect(output.read()).to.deep.equal({
+        'index.html': 'derp',
+      });
+    });
   });
 
   describe('cssTree', function() {

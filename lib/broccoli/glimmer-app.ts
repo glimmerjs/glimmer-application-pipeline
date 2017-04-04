@@ -146,8 +146,20 @@ export default class GlimmerApp {
   }
 
   private buildTrees(): Trees {
-    const srcPath = this.resolveLocal('src');
-    const srcTree = existsSync(srcPath) ? new WatchedDir(srcPath) : null;
+    let srcTree = this.options.trees.src;
+
+    if (typeof srcTree === 'string') {
+      srcTree = new WatchedDir(this.resolveLocal(srcTree));
+    } else if (!srcTree) {
+      let srcPath = this.resolveLocal('src');
+      srcTree = existsSync(srcPath) ? new WatchedDir(srcPath) : null;
+    }
+
+    if (srcTree) {
+      srcTree = new Funnel(srcTree, {
+        destDir: 'src'
+      });
+    }
 
     const nodeModulesTree = new Funnel(new UnwatchedDir(this.project.root), {
       srcDir: 'node_modules/@glimmer',

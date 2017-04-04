@@ -9,7 +9,7 @@ const Project = require('ember-cli/lib/models/project');
 
 const { stripIndent } = require('common-tags');
 
-const GlimmerApp = require('../../lib').GlimmerApp;
+import GlimmerApp, { GlimmerAppOptions } from '../../lib/broccoli/glimmer-app';
 
 const expect = require('../helpers/chai').expect;
 
@@ -24,7 +24,7 @@ describe('glimmer-app', function() {
     return input.dispose();
   });
 
-  function createApp(options = {}) {
+  function createApp(options: GlimmerAppOptions = {}) {
     let pkg = { name: 'glimmer-app-test' };
 
     let cli = new MockCLI();
@@ -38,15 +38,49 @@ describe('glimmer-app', function() {
   describe('constructor', function() {
     it('throws an error if no arguments are provided', function() {
       expect(() => {
-        new GlimmerApp();
+        const AnyGlimmerApp = GlimmerApp as any;
+        new AnyGlimmerApp();
       }).to.throw(/must pass through the default arguments/)
     });
 
     it('throws an error if project is not passed through', function() {
       expect(() => {
-        new GlimmerApp({});
+        const AnyGlimmerApp = GlimmerApp as any;
+        new AnyGlimmerApp({});
       }).to.throw(/must pass through the default arguments/)
     });
+
+    describe('env', function() {
+      const ORIGINAL_EMBER_ENV = process.env.EMBER_ENV;
+
+      beforeEach(function() {
+        delete process.env.EMBER_ENV;
+      });
+
+      afterEach(function() {
+        process.env.EMBER_ENV = ORIGINAL_EMBER_ENV;
+      });
+
+      it('sets an `env`', function() {
+        let app = createApp();
+
+        expect(app.env).to.be.defined;
+      })
+
+      it('sets an `env` to `development` if process.env.EMBER_ENV is undefined', function() {
+        let app = createApp();
+
+        expect(app.env).to.equal('development');
+      })
+
+      it('sets an `env` to process.env.EMBER_ENV if present', function() {
+        process.env.EMBER_ENV = 'test';
+
+        let app = createApp();
+
+        expect(app.env).to.equal('test');
+      })
+    })
   });
 
   describe('htmlTree', function() {
@@ -90,7 +124,7 @@ describe('glimmer-app', function() {
         },
       });
 
-      let app = createApp();
+      let app = createApp() as any;
       let output = await buildOutput(app.htmlTree());
 
       expect(output.read()).to.deep.equal({
@@ -102,5 +136,109 @@ describe('glimmer-app', function() {
               </body>`
       });
     });
+
+    it('allows passing custom `src` tree', async function () {
+      input.write({
+        'app': {},
+        'derp': {
+          'ui': {
+            'index.html': 'derp'
+          }
+        },
+        'src': {
+          'ui': {
+            'index.html': 'src',
+          },
+        },
+        'config': {},
+      });
+
+      let app = createApp({
+        trees: {
+          src: 'derp'
+        }
+      }) as any;
+
+      let output = await buildOutput(app.htmlTree());
+
+      expect(output.read()).to.deep.equal({
+        'index.html': 'derp',
+      });
+    });
+  });
+
+  describe('cssTree', function() {
+    it('allows passing custom `src` tree');
+
+    it('returns null when no styles are present', async function () {
+      input.write({
+        'app': {},
+        'src': {
+          'ui': {
+            'index.html': 'src',
+          },
+        },
+        'config': {},
+      });
+
+      let app = createApp() as any;
+      let output = app.cssTree();
+
+      expect(output).to.be.undefined;
+    });
+
+    it('compiles sass', async function () {
+      input.write({
+        'app': {},
+        'src': {
+          'ui': {
+            'styles': {
+              'app.scss': stripIndent`
+                $font-stack: Helvetica, sans-serif;
+                $primary-color: #333;
+
+                body { font: 100% $font-stack; color: $primary-color; }
+              `,
+            },
+          }
+        },
+        'config': {},
+      });
+
+      let app = createApp() as any;
+      let output = await buildOutput(app.cssTree());
+
+      expect(output.read()).to.deep.equal({
+        'app.css': `body {\n  font: 100% Helvetica, sans-serif;\n  color: #333; }\n`,
+      });
+    });
+
+    it('passes through css', async function () {
+      input.write({
+        'app': {},
+        'src': {
+          'ui': {
+            'styles': {
+              'app.css': `body { color: #333; }`
+            },
+          }
+        },
+        'config': {},
+      });
+
+      let app = createApp() as any;
+      let output = await buildOutput(app.cssTree());
+
+      expect(output.read()).to.deep.equal({
+        'app.css': `body { color: #333; }`
+      });
+    });
+  });
+
+  describe('toTree', function() {
+    it('transpiles templates');
+    it('transpiles javascript');
+    it('builds a module map');
+    it('includes resolver config');
   });
 });

@@ -16,14 +16,15 @@ const assetRev = require('broccoli-asset-rev');
 const uglify = require('broccoli-uglify-sourcemap');
 const ResolutionMapBuilder = require('@glimmer/resolution-map-builder');
 const ResolverConfigurationBuilder = require('@glimmer/resolver-configuration-builder');
-const RollupWithDependencies = require('./rollup-with-dependencies');
-const GlimmerTemplatePrecompiler = require('./glimmer-template-precompiler');
-const defaultModuleConfiguration = require('./default-module-configuration');
 const BroccoliSource = require('broccoli-source');
 const WatchedDir = BroccoliSource.WatchedDir;
 const UnwatchedDir = BroccoliSource.UnwatchedDir;
 
-const Logger = require('heimdalljs-logger');
+import RollupWithDependencies from './rollup-with-dependencies';
+import GlimmerTemplatePrecompiler from './glimmer-template-precompiler';
+import defaultModuleConfiguration from './default-module-configuration';
+
+//const Logger = require('heimdalljs-logger');
 //const logger = Logger('@glimmer/application-pipeline:glimmer-app');
 
 const stew  = require('broccoli-stew');
@@ -38,13 +39,10 @@ const DEFAULT_CONFIG = {
     }
   },
   configPath: './config/environment',
-  trees: {
-    app: 'src',
-    styles: 'src/ui/styles'
-  },
+  trees: { },
   jshintrc: {
     tests: 'tests',
-    app: 'src'
+    src: 'src'
   }
 };
 
@@ -64,8 +62,15 @@ const DEFAULT_TS_OPTIONS = {
   }
 };
 
+export interface EmberCLIDefaults {
+  project: Project
+}
+
 export interface GlimmerAppOptions {
-  outputPaths: any;
+  outputPaths?: any;
+  trees?: {
+    src?: string | Tree
+  }
 }
 
 export interface Addon {
@@ -84,8 +89,8 @@ export interface Project {
 }
 
 export interface Trees {
-  srcTree: Tree;
-  nodeModulesTree: Tree;
+  src: Tree;
+  nodeModules: Tree;
 }
 
 export interface Tree {
@@ -108,31 +113,23 @@ export default class GlimmerApp {
   public env: 'production' | 'development' | 'test';
 
   protected trees: Trees;
-  protected srcPath: string;
 
-  constructor(defaults, options) {
+  constructor(defaults: EmberCLIDefaults, options: GlimmerAppOptions = {}) {
     let missingProjectMessage = 'You must pass through the default arguments passed into your ember-cli-build.js file when constructing a new GlimmerApp';
     if (arguments.length === 0) {
       throw new Error(missingProjectMessage);
-    } else if (arguments.length === 1) {
-      options = defaults;
-    } else {
-      defaultsDeep(options, defaults);
     }
 
-    if (!options.project) {
+    if (!defaults.project) {
       throw new Error(missingProjectMessage);
     }
 
     options = this.options = defaultsDeep(options, DEFAULT_CONFIG);
 
     this.env = process.env.EMBER_ENV || 'development';
-    this.project = options.project;
-    this.name = options.name || this.project.name();
+    this.project = defaults.project;
+    this.name = this.project.name();
     this.trees = this.buildTrees();
-
-    let srcPath = options.srcPath || 'src';
-    this.srcPath = this.resolveLocal(srcPath);
   }
 
   private _configReplacePatterns() {
@@ -146,8 +143,20 @@ export default class GlimmerApp {
   }
 
   private buildTrees(): Trees {
-    const srcPath = this.resolveLocal('src');
-    const srcTree = existsSync(srcPath) ? new WatchedDir(srcPath) : null;
+    let srcTree = this.options.trees.src;
+
+    if (typeof srcTree === 'string') {
+      srcTree = new WatchedDir(this.resolveLocal(srcTree));
+    } else if (!srcTree) {
+      let srcPath = this.resolveLocal('src');
+      srcTree = existsSync(srcPath) ? new WatchedDir(srcPath) : null;
+    }
+
+    if (srcTree) {
+      srcTree = new Funnel(srcTree, {
+        destDir: 'src'
+      });
+    }
 
     const nodeModulesTree = new Funnel(new UnwatchedDir(this.project.root), {
       srcDir: 'node_modules/@glimmer',
@@ -159,8 +168,8 @@ export default class GlimmerApp {
     });
 
     return {
-      srcTree,
-      nodeModulesTree
+      src: srcTree,
+      nodeModules: nodeModulesTree
     }
   }
 
@@ -228,16 +237,11 @@ export default class GlimmerApp {
   }
 
   private javascriptTree() {
-    let { srcTree, nodeModulesTree } = this.trees;
-
-    // Grab the app's `src` directory.
-    srcTree = find(srcTree, {
-      destDir: 'src'
-    });
+    let { src, nodeModules } = this.trees;
 
     // Compile the TypeScript and Handlebars files into JavaScript
-    const compiledHandlebarsTree = this.compiledHandlebarsTree(srcTree);
-    const compiledTypeScriptTree = this.compiledTypeScriptTree(srcTree, nodeModulesTree)
+    const compiledHandlebarsTree = this.compiledHandlebarsTree(src);
+    const compiledTypeScriptTree = this.compiledTypeScriptTree(src, nodeModules)
 
     // Remove top-most `src` directory so module names don't include it.
     const resolvableTree = find(merge([compiledTypeScriptTree, compiledHandlebarsTree]), {
@@ -335,7 +339,11 @@ export default class GlimmerApp {
   }
 
   private cssTree() {
-    let stylesPath = path.join(this.srcPath, 'ui', 'styles');
+    // should really make SASS support to be opt-in, so that
+    // we can properly honor the `GlimmerAppOptions.trees.src`
+    // abstraction here, but for now we still require `src` to be a
+    // "real" path on disk that we check
+    let stylesPath = path.join(this.resolveLocal('src'), 'ui', 'styles');
 
     if (fs.existsSync(stylesPath)) {
       // Compile SASS if app.scss is present
@@ -366,17 +374,17 @@ export default class GlimmerApp {
   }
 
   private htmlTree() {
-    let srcTree = this.trees.srcTree;
+    let srcTree = this.trees.src;
 
     const htmlName = this.options.outputPaths.app.html;
     const files = [
-      'ui/index.html'
+      'src/ui/index.html'
     ];
 
     const index = new Funnel(srcTree, {
       files,
       getDestinationPath(relativePath) {
-        if (relativePath === 'ui/index.html') {
+        if (relativePath === 'src/ui/index.html') {
           relativePath = htmlName;
         }
         return relativePath;

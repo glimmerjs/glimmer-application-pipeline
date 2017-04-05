@@ -263,6 +263,8 @@ describe('glimmer-app', function() {
   });
 
   describe('toTree', function() {
+    this.timeout(10000);
+
     const tsconfigContents = stripIndent`
       {
         "compilerOptions": {

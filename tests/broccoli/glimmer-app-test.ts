@@ -240,6 +240,38 @@ describe('glimmer-app', function() {
       });
     });
 
+    it('handles colocated styles', async function () {
+      input.write({
+        'app': {},
+        'src': {
+          'ui': {
+            'components': {
+              'test-component': {
+                'style.scss': stripIndent`
+                  $font-stack: Helvetica, sans-serif;
+                  $primary-color: #333;
+
+                  body { font: 100% $font-stack; color: $primary-color; }
+                `,
+              }
+            },
+          }
+        },
+        'config': {},
+      });
+
+      let app = createApp({
+        styleConfig: {
+          colocation: true
+        }
+      }) as any;
+      let output = await buildOutput(app.cssTree());
+
+      expect(output.read()).to.deep.equal({
+        'app.css': `body {\n  font: 100% Helvetica, sans-serif;\n  color: #333; }\n`,
+      });
+    });
+
     it('passes through css', async function () {
       input.write({
         'app': {},
@@ -257,7 +289,7 @@ describe('glimmer-app', function() {
       let output = await buildOutput(app.cssTree());
 
       expect(output.read()).to.deep.equal({
-        'app.css': `body { color: #333; }`
+        'app.css': `body {\n  color: #333; }\n`
       });
     });
 
@@ -284,7 +316,7 @@ describe('glimmer-app', function() {
       let output = await buildOutput(app.cssTree());
 
       expect(output.read()).to.deep.equal({
-        'foo-bar.css': `body { color: #333; }`
+        'foo-bar.css': `body {\n  color: #333; }\n`
       });
     });
 

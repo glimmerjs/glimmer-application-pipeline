@@ -11,7 +11,7 @@ const Project = require('ember-cli/lib/models/project');
 const { stripIndent } = require('common-tags');
 
 import GlimmerApp, {
-  Options as GlimmerAppOptions
+  GlimmerAppOptions
 } from '../../lib/broccoli/glimmer-app';
 
 const expect = require('../helpers/chai').expect;

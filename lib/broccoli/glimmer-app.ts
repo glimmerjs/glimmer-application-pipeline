@@ -67,14 +67,17 @@ export interface EmberCLIDefaults {
   project: Project
 }
 
-export interface Options {
+export interface GlimmerAppOptions {
   outputPaths?: {
     app?: {
       html?: string;
       js?: string
     }
-  };
-  trees?: TreesOption
+  }
+  trees?: {
+    src?: Tree | string;
+    nodeModules?: Tree | string;
+  }
 }
 
 export interface Addon {
@@ -90,11 +93,6 @@ export interface Project {
   pkg: {
     name: string;
   }
-}
-
-export interface TreesOption {
-  src?: Tree | string;
-  nodeModules: Tree | string;
 }
 
 export interface Trees {
@@ -123,7 +121,7 @@ export default class GlimmerApp {
 
   protected trees: Trees;
 
-  constructor(defaults: EmberCLIDefaults, options: Options = {}) {
+  constructor(defaults: EmberCLIDefaults, options: GlimmerAppOptions = {}) {
     let missingProjectMessage = 'You must pass through the default arguments passed into your ember-cli-build.js file when constructing a new GlimmerApp';
     if (arguments.length === 0) {
       throw new Error(missingProjectMessage);
@@ -137,7 +135,7 @@ export default class GlimmerApp {
     this.project = defaults.project;
     this.name = this.project.name();
 
-    this.trees = this.buildTrees(options.trees);
+    this.trees = this.buildTrees(options);
     this.outputPaths = this.buildOutputPaths(options);
   }
 
@@ -151,7 +149,7 @@ export default class GlimmerApp {
     }];
   }
 
-  private buildOutputPaths(options: Options): OutputPaths {
+  private buildOutputPaths(options: GlimmerAppOptions): OutputPaths {
     return defaultsDeep({}, options.outputPaths, {
       app: {
         html: 'index.html',
@@ -160,8 +158,8 @@ export default class GlimmerApp {
     });
   }
 
-  private buildTrees(trees: TreesOption): Trees {
-    let srcTree = trees && trees.src;
+  private buildTrees(options: GlimmerAppOptions): Trees {
+    let srcTree = options.trees && options.trees.src;
 
     if (typeof srcTree === 'string') {
       srcTree = new WatchedDir(this.resolveLocal(srcTree));
@@ -176,7 +174,7 @@ export default class GlimmerApp {
       });
     }
 
-    let nodeModulesTree = trees && trees.nodeModules || new UnwatchedDir(this.resolveLocal('node_modules'));
+    let nodeModulesTree = options.trees && options.trees.nodeModules || new UnwatchedDir(this.resolveLocal('node_modules'));
 
     if (nodeModulesTree) {
       nodeModulesTree = new Funnel(nodeModulesTree, {

@@ -335,6 +335,31 @@ describe('glimmer-app', function() {
       expect(actual['app.js']).to.include('component:/glimmer-app-test/components/foo-bar');
     });
 
-    it('includes resolver config');
+    it('includes resolver config', async function() {
+      input.write({
+        'src': {
+          'index.ts': 'import resolverConfig from "./config/resolver-configuration"; console.log(resolverConfig);',
+          'ui': {
+            'index.html': 'src'
+          }
+        },
+        'config': {},
+        'tsconfig.json': tsconfigContents
+      });
+
+      let app = createApp({
+        trees: {
+          nodeModules: path.join(__dirname, '..', '..', '..', 'node_modules')
+        }
+      });
+      let output = await buildOutput(app.toTree());
+      let actual = output.read();
+
+      // it would be much better to confirm the full expected resolver config
+      // but rollup actually reformats the code so it doesn't match a simple
+      // JSON.stringify'ied version of the defaultModuleConfiguration
+      expect(actual['app.js']).to.include('glimmer-app-test');
+      expect(actual['app.js']).to.include('definitiveCollection');
+    });
   });
 });

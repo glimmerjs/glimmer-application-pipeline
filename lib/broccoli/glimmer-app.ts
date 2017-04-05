@@ -178,12 +178,7 @@ export default class GlimmerApp {
 
     if (nodeModulesTree) {
       nodeModulesTree = new Funnel(nodeModulesTree, {
-        srcDir: '@glimmer',
-        destDir: 'node_modules/@glimmer',
-        include: [
-          '**/*.d.ts',
-          '**/package.json'
-        ]
+        destDir: 'node_modules/'
       });
     }
 

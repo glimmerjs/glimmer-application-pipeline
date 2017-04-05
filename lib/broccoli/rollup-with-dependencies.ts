@@ -84,7 +84,7 @@ function getBabelConfig(es5) {
     baseConfig.presets.push(
       [
         'es2015',
-        { modules: false }
+        { modules: false, loose: true }
       ]
     );
   }

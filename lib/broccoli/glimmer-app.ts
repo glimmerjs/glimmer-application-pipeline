@@ -80,6 +80,7 @@ export interface Project {
 
 export interface TreesOption {
   src?: Tree | string;
+  nodeModules: Tree | string;
 }
 
 export interface Trees {
@@ -160,14 +161,18 @@ export default class GlimmerApp {
       });
     }
 
-    const nodeModulesTree = new Funnel(new UnwatchedDir(this.project.root), {
-      srcDir: 'node_modules/@glimmer',
-      destDir: 'node_modules/@glimmer',
-      include: [
-        '**/*.d.ts',
-        '**/package.json'
-      ]
-    });
+    let nodeModulesTree = trees && trees.nodeModules || new UnwatchedDir(this.resolveLocal('node_modules'));
+
+    if (nodeModulesTree) {
+      nodeModulesTree = new Funnel(nodeModulesTree, {
+        srcDir: '@glimmer',
+        destDir: 'node_modules/@glimmer',
+        include: [
+          '**/*.d.ts',
+          '**/package.json'
+        ]
+      });
+    }
 
     return {
       src: srcTree,
@@ -175,7 +180,12 @@ export default class GlimmerApp {
     }
   }
 
-  private resolveLocal(to) {
+  private resolveLocal(to: string) {
+    // return argument if it is absolute
+    if (to[0] === '/') {
+      return to;
+    }
+
     return path.join(this.project.root, to);
   }
 
@@ -201,7 +211,7 @@ export default class GlimmerApp {
    *
    * @param options
    */
-  public toTree(options) {
+  public toTree() {
     let isProduction = process.env.EMBER_ENV === 'production';
 
     let jsTree = this.javascriptTree();

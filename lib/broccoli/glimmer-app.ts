@@ -469,11 +469,13 @@ export default class GlimmerApp {
       project: this.project
     });
 
-    this._cachedConfigTree = new Funnel(configTree, {
+    let namespacedConfigTree = new Funnel(configTree, {
       srcDir: '/',
       destDir: this.name + '/config',
       annotation: 'Funnel (config)'
     });
+
+    this._cachedConfigTree = maybeDebug(namespacedConfigTree, 'config-tree');
 
     return this._cachedConfigTree;
   }

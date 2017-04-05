@@ -29,8 +29,17 @@ import defaultModuleConfiguration from './default-module-configuration';
 
 const stew  = require('broccoli-stew');
 const find = stew.find;
+const debug = stew.debug;
 
 import { TypeScript } from 'broccoli-typescript-compiler/lib/plugin';
+
+function maybeDebug(inputTree: Tree, name: string) {
+  if (!process.env.GLIMMER_BUILD_DEBUG) {
+    return inputTree;
+  }
+
+  return debug(inputTree, { name });
+}
 
 const DEFAULT_TS_OPTIONS = {
   tsconfig: {
@@ -300,7 +309,7 @@ export default class GlimmerApp {
   }
 
   private rollupTree(jsTree) {
-    return new RollupWithDependencies(jsTree, {
+    return new RollupWithDependencies(maybeDebug(jsTree, 'rollup-input-tree'), {
       inputFiles: ['**/*.js'],
       rollup: {
         format: 'umd',

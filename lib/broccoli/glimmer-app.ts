@@ -32,20 +32,6 @@ const find = stew.find;
 
 import { TypeScript } from 'broccoli-typescript-compiler/lib/plugin';
 
-const DEFAULT_CONFIG = {
-  outputPaths: {
-    app: {
-      html: 'index.html'
-    }
-  },
-  configPath: './config/environment',
-  trees: { },
-  jshintrc: {
-    tests: 'tests',
-    src: 'src'
-  }
-};
-
 const DEFAULT_TS_OPTIONS = {
   tsconfig: {
     compilerOptions: {
@@ -62,15 +48,19 @@ const DEFAULT_TS_OPTIONS = {
   }
 };
 
+export interface OutputPaths {
+  app: {
+    html: string
+  }
+}
+
 export interface EmberCLIDefaults {
   project: Project
 }
 
-export interface GlimmerAppOptions {
+export interface Options {
   outputPaths?: any;
-  trees?: {
-    src?: string | Tree
-  }
+  trees?: TreesOption
 }
 
 export interface Addon {
@@ -86,6 +76,10 @@ export interface Project {
   pkg: {
     name: string;
   }
+}
+
+export interface TreesOption {
+  src?: Tree | string;
 }
 
 export interface Trees {
@@ -107,14 +101,14 @@ export interface Tree {
  * @param {Object} [options={}] Configuration options
  */
 export default class GlimmerApp {
-  public options: GlimmerAppOptions;
   public project: Project;
   public name: string;
   public env: 'production' | 'development' | 'test';
+  private outputPaths: OutputPaths;
 
   protected trees: Trees;
 
-  constructor(defaults: EmberCLIDefaults, options: GlimmerAppOptions = {}) {
+  constructor(defaults: EmberCLIDefaults, options: Options = {}) {
     let missingProjectMessage = 'You must pass through the default arguments passed into your ember-cli-build.js file when constructing a new GlimmerApp';
     if (arguments.length === 0) {
       throw new Error(missingProjectMessage);
@@ -124,12 +118,12 @@ export default class GlimmerApp {
       throw new Error(missingProjectMessage);
     }
 
-    options = this.options = defaultsDeep(options, DEFAULT_CONFIG);
-
     this.env = process.env.EMBER_ENV || 'development';
     this.project = defaults.project;
     this.name = this.project.name();
-    this.trees = this.buildTrees();
+
+    this.trees = this.buildTrees(options.trees);
+    this.outputPaths = this.buildOutputPaths(options);
   }
 
   private _configReplacePatterns() {
@@ -142,8 +136,16 @@ export default class GlimmerApp {
     }];
   }
 
-  private buildTrees(): Trees {
-    let srcTree = this.options.trees.src;
+  private buildOutputPaths(options: Options): OutputPaths {
+    return defaultsDeep({}, options.outputPaths, {
+      app: {
+        html: 'index.html'
+      }
+    });
+  }
+
+  private buildTrees(trees: TreesOption): Trees {
+    let srcTree = trees && trees.src;
 
     if (typeof srcTree === 'string') {
       srcTree = new WatchedDir(this.resolveLocal(srcTree));
@@ -376,7 +378,7 @@ export default class GlimmerApp {
   private htmlTree() {
     let srcTree = this.trees.src;
 
-    const htmlName = this.options.outputPaths.app.html;
+    const htmlName = this.outputPaths.app.html;
     const files = [
       'src/ui/index.html'
     ];

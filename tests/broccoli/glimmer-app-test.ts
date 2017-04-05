@@ -9,7 +9,9 @@ const Project = require('ember-cli/lib/models/project');
 
 const { stripIndent } = require('common-tags');
 
-import GlimmerApp, { GlimmerAppOptions } from '../../lib/broccoli/glimmer-app';
+import GlimmerApp, {
+  Options as GlimmerAppOptions
+} from '../../lib/broccoli/glimmer-app';
 
 const expect = require('../helpers/chai').expect;
 
@@ -163,6 +165,30 @@ describe('glimmer-app', function() {
 
       expect(output.read()).to.deep.equal({
         'index.html': 'derp',
+      });
+    });
+
+    it('allows passing custom outputPaths', async function() {
+      input.write({
+        'app': {},
+        'src': {
+          'ui': {
+            'index.html': 'src',
+          },
+        },
+        'config': {},
+      });
+
+      let app = createApp({
+        outputPaths: {
+          app: { html: 'foo.html' }
+        }
+      }) as any;
+
+      let output = await buildOutput(app.htmlTree());
+
+      expect(output.read()).to.deep.equal({
+        'foo.html': 'src',
       });
     });
   });

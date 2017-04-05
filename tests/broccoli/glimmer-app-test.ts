@@ -308,8 +308,33 @@ describe('glimmer-app', function() {
       expect(actual['app.js']).to.include('Hello!');
     });
 
-    it('transpiles javascript');
-    it('builds a module map');
+    it('builds a module map', async function() {
+      input.write({
+        'src': {
+          'index.ts': 'import moduleMap from "./config/module-map"; console.log(moduleMap);',
+          'ui': {
+            'index.html': 'src',
+            'components': {
+              'foo-bar.hbs': `<div>Hello!</div>`
+            },
+          }
+        },
+        'config': {},
+        'tsconfig.json': tsconfigContents
+      });
+
+      let app = createApp({
+        trees: {
+          nodeModules: path.join(__dirname, '..', '..', '..', 'node_modules')
+        }
+      });
+      let output = await buildOutput(app.toTree());
+      let actual = output.read();
+
+      expect(actual['index.html']).to.equal('src');
+      expect(actual['app.js']).to.include('component:/glimmer-app-test/components/foo-bar');
+    });
+
     it('includes resolver config');
   });
 });

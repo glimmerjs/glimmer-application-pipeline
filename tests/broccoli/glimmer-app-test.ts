@@ -1,5 +1,6 @@
 'use strict';
 
+const path = require('path');
 const broccoliTestHelper = require('broccoli-test-helper');
 const buildOutput = broccoliTestHelper.buildOutput;
 const createTempDir = broccoliTestHelper.createTempDir;
@@ -262,7 +263,51 @@ describe('glimmer-app', function() {
   });
 
   describe('toTree', function() {
-    it('transpiles templates');
+    const tsconfigContents = stripIndent`
+      {
+        "compilerOptions": {
+          "target": "es6",
+          "module": "es2015",
+          "inlineSourceMap": true,
+          "inlineSources": true,
+          "moduleResolution": "node",
+          "experimentalDecorators": true
+        },
+        "exclude": [
+          "node_modules",
+          "tmp",
+          "dist"
+        ]
+      }
+    `;
+
+    it('transpiles templates', async function() {
+      input.write({
+        'src': {
+          'index.ts': 'import template from "./ui/components/foo-bar"; console.log(template);',
+          'ui': {
+            'index.html': 'src',
+            'components': {
+              'foo-bar.hbs': `<div>Hello!</div>`
+            },
+          }
+        },
+        'config': {},
+        'tsconfig.json': tsconfigContents
+      });
+
+      let app = createApp({
+        trees: {
+          nodeModules: path.join(__dirname, '..', '..', '..', 'node_modules')
+        }
+      });
+      let output = await buildOutput(app.toTree());
+      let actual = output.read();
+
+      expect(actual['index.html']).to.equal('src');
+      expect(actual['app.js']).to.include('Hello!');
+    });
+
     it('transpiles javascript');
     it('builds a module map');
     it('includes resolver config');

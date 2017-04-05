@@ -363,5 +363,33 @@ describe('glimmer-app', function() {
       expect(actual['app.js']).to.include('glimmer-app-test');
       expect(actual['app.js']).to.include('definitiveCollection');
     });
+
+    it('honors outputPaths.app.js', async function() {
+      input.write({
+        'src': {
+          'index.ts': '',
+          'ui': {
+            'index.html': 'src'
+          }
+        },
+        'config': {},
+        'tsconfig.json': tsconfigContents
+      });
+
+      let app = createApp({
+        trees: {
+          nodeModules: path.join(__dirname, '..', '..', '..', 'node_modules')
+        },
+        outputPaths: {
+          app: {
+            js: 'foo-bar-file.js'
+          }
+        }
+      });
+      let output = await buildOutput(app.toTree());
+      let actual = output.read();
+
+      expect(actual['foo-bar-file.js']).to.be.defined;
+    });
   });
 });

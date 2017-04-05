@@ -59,16 +59,21 @@ const DEFAULT_TS_OPTIONS = {
 
 export interface OutputPaths {
   app: {
-    html: string
+    html: string,
+    js: string
   }
 }
-
 export interface EmberCLIDefaults {
   project: Project
 }
 
 export interface Options {
-  outputPaths?: any;
+  outputPaths?: {
+    app?: {
+      html?: string;
+      js?: string
+    }
+  };
   trees?: TreesOption
 }
 
@@ -108,7 +113,7 @@ export interface Tree {
  * @class GlimmerApp
  * @constructor
  * @param {Object} [defaults]
- * @param {Object} [options={}] Configuration options
+ * @param {Object} [options=Options] Configuration options
  */
 export default class GlimmerApp {
   public project: Project;
@@ -149,7 +154,8 @@ export default class GlimmerApp {
   private buildOutputPaths(options: Options): OutputPaths {
     return defaultsDeep({}, options.outputPaths, {
       app: {
-        html: 'index.html'
+        html: 'index.html',
+        js: 'app.js'
       }
     });
   }
@@ -314,7 +320,7 @@ export default class GlimmerApp {
       rollup: {
         format: 'umd',
         entry: 'index.js',
-        dest: 'app.js',
+        dest: this.outputPaths.app.js,
         sourceMap: 'inline'
       }
     });

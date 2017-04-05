@@ -1,5 +1,6 @@
 'use strict';
 
+const path = require('path');
 const broccoliTestHelper = require('broccoli-test-helper');
 const buildOutput = broccoliTestHelper.buildOutput;
 const createTempDir = broccoliTestHelper.createTempDir;
@@ -262,9 +263,133 @@ describe('glimmer-app', function() {
   });
 
   describe('toTree', function() {
-    it('transpiles templates');
-    it('transpiles javascript');
-    it('builds a module map');
-    it('includes resolver config');
+    this.timeout(10000);
+
+    const tsconfigContents = stripIndent`
+      {
+        "compilerOptions": {
+          "target": "es6",
+          "module": "es2015",
+          "inlineSourceMap": true,
+          "inlineSources": true,
+          "moduleResolution": "node",
+          "experimentalDecorators": true
+        },
+        "exclude": [
+          "node_modules",
+          "tmp",
+          "dist"
+        ]
+      }
+    `;
+
+    it('transpiles templates', async function() {
+      input.write({
+        'src': {
+          'index.ts': 'import template from "./ui/components/foo-bar"; console.log(template);',
+          'ui': {
+            'index.html': 'src',
+            'components': {
+              'foo-bar.hbs': `<div>Hello!</div>`
+            },
+          }
+        },
+        'config': {},
+        'tsconfig.json': tsconfigContents
+      });
+
+      let app = createApp({
+        trees: {
+          nodeModules: path.join(__dirname, '..', '..', '..', 'node_modules')
+        }
+      });
+      let output = await buildOutput(app.toTree());
+      let actual = output.read();
+
+      expect(actual['index.html']).to.equal('src');
+      expect(actual['app.js']).to.include('Hello!');
+    });
+
+    it('builds a module map', async function() {
+      input.write({
+        'src': {
+          'index.ts': 'import moduleMap from "./config/module-map"; console.log(moduleMap);',
+          'ui': {
+            'index.html': 'src',
+            'components': {
+              'foo-bar.hbs': `<div>Hello!</div>`
+            },
+          }
+        },
+        'config': {},
+        'tsconfig.json': tsconfigContents
+      });
+
+      let app = createApp({
+        trees: {
+          nodeModules: path.join(__dirname, '..', '..', '..', 'node_modules')
+        }
+      });
+      let output = await buildOutput(app.toTree());
+      let actual = output.read();
+
+      expect(actual['index.html']).to.equal('src');
+      expect(actual['app.js']).to.include('component:/glimmer-app-test/components/foo-bar');
+    });
+
+    it('includes resolver config', async function() {
+      input.write({
+        'src': {
+          'index.ts': 'import resolverConfig from "./config/resolver-configuration"; console.log(resolverConfig);',
+          'ui': {
+            'index.html': 'src'
+          }
+        },
+        'config': {},
+        'tsconfig.json': tsconfigContents
+      });
+
+      let app = createApp({
+        trees: {
+          nodeModules: path.join(__dirname, '..', '..', '..', 'node_modules')
+        }
+      });
+      let output = await buildOutput(app.toTree());
+      let actual = output.read();
+
+      // it would be much better to confirm the full expected resolver config
+      // but rollup actually reformats the code so it doesn't match a simple
+      // JSON.stringify'ied version of the defaultModuleConfiguration
+      expect(actual['app.js']).to.include('glimmer-app-test');
+      expect(actual['app.js']).to.include('definitiveCollection');
+    });
+
+    it('honors outputPaths.app.js', async function() {
+      input.write({
+        'src': {
+          'index.ts': '',
+          'ui': {
+            'index.html': 'src'
+          }
+        },
+        'config': {},
+        'tsconfig.json': tsconfigContents
+      });
+
+      let app = createApp({
+        trees: {
+          nodeModules: path.join(__dirname, '..', '..', '..', 'node_modules')
+        },
+        outputPaths: {
+          app: {
+            js: 'foo-bar-file.js'
+          }
+        }
+      });
+      let output = await buildOutput(app.toTree());
+      let actual = output.read();
+
+      expect(actual['foo-bar-file.js']).to.be.defined;
+    });
   });
 });

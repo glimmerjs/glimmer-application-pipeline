@@ -14,6 +14,7 @@
     "postpublish": "git push origin master --tags",
     "pretest": "ember build",
     "test": "mocha dist/tests --recursive",
+    "test:debug": "ember build && mocha debug dist/tests --recursive",
     "start": "ember test --server"
   },
   "repository": "https://github.com/glimmerjs/glimmer-application-pipeline",

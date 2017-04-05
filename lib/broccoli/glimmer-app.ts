@@ -29,8 +29,17 @@ import defaultModuleConfiguration from './default-module-configuration';
 
 const stew  = require('broccoli-stew');
 const find = stew.find;
+const debug = stew.debug;
 
 import { TypeScript } from 'broccoli-typescript-compiler/lib/plugin';
+
+function maybeDebug(inputTree: Tree, name: string) {
+  if (!process.env.GLIMMER_BUILD_DEBUG) {
+    return inputTree;
+  }
+
+  return debug(inputTree, { name });
+}
 
 const DEFAULT_TS_OPTIONS = {
   tsconfig: {
@@ -50,16 +59,21 @@ const DEFAULT_TS_OPTIONS = {
 
 export interface OutputPaths {
   app: {
-    html: string
+    html: string,
+    js: string
   }
 }
-
 export interface EmberCLIDefaults {
   project: Project
 }
 
 export interface Options {
-  outputPaths?: any;
+  outputPaths?: {
+    app?: {
+      html?: string;
+      js?: string
+    }
+  };
   trees?: TreesOption
 }
 
@@ -80,6 +94,7 @@ export interface Project {
 
 export interface TreesOption {
   src?: Tree | string;
+  nodeModules: Tree | string;
 }
 
 export interface Trees {
@@ -98,7 +113,7 @@ export interface Tree {
  * @class GlimmerApp
  * @constructor
  * @param {Object} [defaults]
- * @param {Object} [options={}] Configuration options
+ * @param {Object} [options=Options] Configuration options
  */
 export default class GlimmerApp {
   public project: Project;
@@ -139,7 +154,8 @@ export default class GlimmerApp {
   private buildOutputPaths(options: Options): OutputPaths {
     return defaultsDeep({}, options.outputPaths, {
       app: {
-        html: 'index.html'
+        html: 'index.html',
+        js: 'app.js'
       }
     });
   }
@@ -160,14 +176,18 @@ export default class GlimmerApp {
       });
     }
 
-    const nodeModulesTree = new Funnel(new UnwatchedDir(this.project.root), {
-      srcDir: 'node_modules/@glimmer',
-      destDir: 'node_modules/@glimmer',
-      include: [
-        '**/*.d.ts',
-        '**/package.json'
-      ]
-    });
+    let nodeModulesTree = trees && trees.nodeModules || new UnwatchedDir(this.resolveLocal('node_modules'));
+
+    if (nodeModulesTree) {
+      nodeModulesTree = new Funnel(nodeModulesTree, {
+        srcDir: '@glimmer',
+        destDir: 'node_modules/@glimmer',
+        include: [
+          '**/*.d.ts',
+          '**/package.json'
+        ]
+      });
+    }
 
     return {
       src: srcTree,
@@ -175,7 +195,12 @@ export default class GlimmerApp {
     }
   }
 
-  private resolveLocal(to) {
+  private resolveLocal(to: string) {
+    // return argument if it is absolute
+    if (to[0] === '/') {
+      return to;
+    }
+
     return path.join(this.project.root, to);
   }
 
@@ -201,7 +226,7 @@ export default class GlimmerApp {
    *
    * @param options
    */
-  public toTree(options) {
+  public toTree() {
     let isProduction = process.env.EMBER_ENV === 'production';
 
     let jsTree = this.javascriptTree();
@@ -290,12 +315,12 @@ export default class GlimmerApp {
   }
 
   private rollupTree(jsTree) {
-    return new RollupWithDependencies(jsTree, {
+    return new RollupWithDependencies(maybeDebug(jsTree, 'rollup-input-tree'), {
       inputFiles: ['**/*.js'],
       rollup: {
         format: 'umd',
         entry: 'index.js',
-        dest: 'app.js',
+        dest: this.outputPaths.app.js,
         sourceMap: 'inline'
       }
     });
@@ -450,11 +475,13 @@ export default class GlimmerApp {
       project: this.project
     });
 
-    this._cachedConfigTree = new Funnel(configTree, {
+    let namespacedConfigTree = new Funnel(configTree, {
       srcDir: '/',
       destDir: this.name + '/config',
       annotation: 'Funnel (config)'
     });
+
+    this._cachedConfigTree = maybeDebug(namespacedConfigTree, 'config-tree');
 
     return this._cachedConfigTree;
   }

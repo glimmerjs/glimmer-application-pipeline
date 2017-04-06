@@ -1,14 +1,9 @@
 const Filter = require('broccoli-persistent-filter');
-const precompile = require('@glimmer/compiler').precompile;
-
-interface TemplateMeta {
-  '<template-meta>': true;
-  specifier: string;
-}
+import { precompile } from '@glimmer/compiler';
 
 class GlimmerTemplatePrecompiler extends Filter {
   extensions = ['hbs'];
-  targetExtension = 'js';
+  targetExtension = 'ts';
   options: any;
 
   constructor(inputNode, options) {
@@ -18,13 +13,13 @@ class GlimmerTemplatePrecompiler extends Filter {
 
   processString(content, relativePath) {
     let specifier = getTemplateSpecifier(this.options.rootName, relativePath);
-    return 'export default ' + precompile<TemplateMeta>(content, { meta: { specifier, '<template-meta>': true } }) + ';';
+    return 'export default ' + precompile(content, { meta: { specifier, '<template-meta>': true } }) + ';';
   }
 }
 
 function getTemplateSpecifier(rootName, relativePath) {
   let path = relativePath.split('/');
-  let prefix = path.shift();
+  path.shift();
 
   // TODO - should use module map config to be rigorous
   if (path[path.length - 1] === 'template.hbs') {

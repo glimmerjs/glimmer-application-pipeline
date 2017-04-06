@@ -27,9 +27,6 @@ import defaultModuleConfiguration from './default-module-configuration';
 //const Logger = require('heimdalljs-logger');
 //const logger = Logger('@glimmer/application-pipeline:glimmer-app');
 
-const stew  = require('broccoli-stew');
-const find = stew.find;
-const debug = stew.debug;
 
 import { TypeScript } from 'broccoli-typescript-compiler/lib/plugin';
 
@@ -37,6 +34,8 @@ function maybeDebug(inputTree: Tree, name: string) {
   if (!process.env.GLIMMER_BUILD_DEBUG) {
     return inputTree;
   }
+
+  const debug = require('broccoli-stew').debug;
 
   // preserve `null` trees
   if (!inputTree) {

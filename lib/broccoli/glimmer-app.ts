@@ -352,10 +352,6 @@ export default class GlimmerApp {
   }
 
   private buildResolutionMap(src) {
-    src = find(src, {
-      exclude: ['config/**/*']
-    });
-
     return new ResolutionMapBuilder(src, this._configTree(), {
       configPath: this._configPath(),
       defaultModulePrefix: this.name,

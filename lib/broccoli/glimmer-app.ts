@@ -64,8 +64,9 @@ const DEFAULT_TS_OPTIONS = {
 
 export interface OutputPaths {
   app: {
-    html: string,
-    js: string
+    html: string;
+    js: string;
+    css: string;
   }
 }
 export interface EmberCLIDefaults {
@@ -76,7 +77,8 @@ export interface GlimmerAppOptions {
   outputPaths?: {
     app?: {
       html?: string;
-      js?: string
+      js?: string;
+      css?: string;
     }
   }
   trees?: {
@@ -158,7 +160,8 @@ export default class GlimmerApp {
     return defaultsDeep({}, options.outputPaths, {
       app: {
         html: 'index.html',
-        js: 'app.js'
+        js: 'app.js',
+        css: 'app.css'
       }
     });
   }
@@ -379,7 +382,7 @@ export default class GlimmerApp {
       // (this works with imports from app.scss)
       let scssPath = path.join(stylesPath, 'app.scss');
       if (fs.existsSync(scssPath)) {
-        return compileSass([stylesPath], 'app.scss', 'app.css', {
+        return compileSass([stylesPath], 'app.scss', this.outputPaths.app.css, {
           annotation: 'Funnel: scss'
         });
       }
@@ -388,7 +391,7 @@ export default class GlimmerApp {
       return concat(new Funnel(stylesPath, {
         include: ['**/*.css'],
         annotation: 'Funnel: css'}),
-        { outputFile: 'app.css' });
+        { outputFile: this.outputPaths.app.css });
     }
   }
 

@@ -38,6 +38,11 @@ function maybeDebug(inputTree: Tree, name: string) {
     return inputTree;
   }
 
+  // preserve `null` trees
+  if (!inputTree) {
+    return inputTree;
+  }
+
   return debug(inputTree, { name });
 }
 
@@ -188,7 +193,7 @@ export default class GlimmerApp {
     }
 
     return {
-      src: srcTree,
+      src: maybeDebug(srcTree, 'src'),
       nodeModules: nodeModulesTree
     }
   }
@@ -266,10 +271,14 @@ export default class GlimmerApp {
 
     // Compile the TypeScript and Handlebars files into JavaScript
     const compiledHandlebarsTree = this.compiledHandlebarsTree(src);
-    const compiledTypeScriptTree = this.compiledTypeScriptTree(src, nodeModules)
+    const compiledTypeScriptTree = this.compiledTypeScriptTree(compiledHandlebarsTree, nodeModules)
+
+    // the output tree from typescript only includes the output from .ts -> .js transpilation
+    // and no other files from the original source tree
+    const combinedHandlebarsAndTypescriptTree = merge([compiledHandlebarsTree, compiledTypeScriptTree], { overwrite: true});
 
     // Remove top-most `src` directory so module names don't include it.
-    const resolvableTree = find(merge([compiledTypeScriptTree, compiledHandlebarsTree]), {
+    const resolvableTree = new Funnel(combinedHandlebarsAndTypescriptTree, {
       srcDir: 'src'
     });
 
@@ -299,17 +308,17 @@ export default class GlimmerApp {
 
     let inputTrees = merge([nodeModulesTree, srcTree]);
 
-    return typescript(inputTrees, tsOptions);
+    let compiledTypeScriptTree = typescript(inputTrees, tsOptions);
+
+    return maybeDebug(compiledTypeScriptTree, 'typescript-output');
   }
 
   private compiledHandlebarsTree(srcTree) {
-    let hbsTree = find(srcTree, {
-      include: ['src/**/*.hbs']
-    });
-
-    return new GlimmerTemplatePrecompiler(hbsTree, {
+    let compiledHandlebarsTree = new GlimmerTemplatePrecompiler(srcTree, {
       rootName: this.project.pkg.name
     });
+
+    return maybeDebug(compiledHandlebarsTree, 'handlebars-output');
   }
 
   private rollupTree(jsTree) {

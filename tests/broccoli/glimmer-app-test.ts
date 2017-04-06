@@ -260,6 +260,65 @@ describe('glimmer-app', function() {
         'app.css': `body { color: #333; }`
       });
     });
+
+    it('respects outputPaths.app.css with plain css', async function () {
+      input.write({
+        'app': {},
+        'src': {
+          'ui': {
+            'styles': {
+              'app.css': `body { color: #333; }`
+            },
+          }
+        },
+        'config': {},
+      });
+
+      let app = createApp({
+        outputPaths: {
+          app: {
+            css: 'foo-bar.css'
+          }
+        }
+      }) as any;
+      let output = await buildOutput(app.cssTree());
+
+      expect(output.read()).to.deep.equal({
+        'foo-bar.css': `body { color: #333; }`
+      });
+    });
+
+    it('respects outputPaths.app.css with sass', async function () {
+      input.write({
+        'app': {},
+        'src': {
+          'ui': {
+            'styles': {
+              'app.scss': stripIndent`
+                $font-stack: Helvetica, sans-serif;
+                $primary-color: #333;
+
+                body { font: 100% $font-stack; color: $primary-color; }
+              `,
+            },
+          }
+        },
+        'config': {},
+      });
+
+      let app = createApp({
+        outputPaths: {
+          app: {
+            css: 'foo-bar.css'
+          }
+        }
+      }) as any;
+      let output = await buildOutput(app.cssTree());
+
+      expect(output.read()).to.deep.equal({
+        'foo-bar.css': `body {\n  font: 100% Helvetica, sans-serif;\n  color: #333; }\n`,
+      });
+    });
   });
 
   describe('toTree', function() {

@@ -264,13 +264,17 @@ export default class GlimmerApp {
   private javascriptTree() {
     let { src, nodeModules } = this.trees;
 
+    let srcWithoutHBSTree = new Funnel(src, {
+      exclude: ['**/*.hbs', '**/*.ts']
+    });
+
     // Compile the TypeScript and Handlebars files into JavaScript
     const compiledHandlebarsTree = this.compiledHandlebarsTree(src);
     const compiledTypeScriptTree = this.compiledTypeScriptTree(compiledHandlebarsTree, nodeModules)
 
     // the output tree from typescript only includes the output from .ts -> .js transpilation
     // and no other files from the original source tree
-    const combinedHandlebarsAndTypescriptTree = merge([compiledHandlebarsTree, compiledTypeScriptTree], { overwrite: true});
+    const combinedHandlebarsAndTypescriptTree = merge([srcWithoutHBSTree, compiledTypeScriptTree], { overwrite: true});
 
     // Remove top-most `src` directory so module names don't include it.
     const resolvableTree = new Funnel(combinedHandlebarsAndTypescriptTree, {

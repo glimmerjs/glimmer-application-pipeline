@@ -1,9 +1,8 @@
 'use strict';
 
 const path = require('path');
-const broccoliTestHelper = require('broccoli-test-helper');
-const buildOutput = broccoliTestHelper.buildOutput;
-const createTempDir = broccoliTestHelper.createTempDir;
+
+import { buildOutput, createTempDir, TempDir } from 'broccoli-test-helper';
 
 const MockCLI = require('ember-cli/tests/helpers/mock-cli');
 const Project = require('ember-cli/lib/models/project');
@@ -17,7 +16,7 @@ import GlimmerApp, {
 const expect = require('../helpers/chai').expect;
 
 describe('glimmer-app', function() {
-  let input;
+  let input: TempDir;
 
   beforeEach(function() {
     return createTempDir().then(tempDir => (input = tempDir));

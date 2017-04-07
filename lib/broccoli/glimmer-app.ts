@@ -266,39 +266,26 @@ export default class GlimmerApp {
   private javascriptTree() {
     let { src, nodeModules } = this.trees;
 
+    const configTree = this.buildConfigTree(src);
+
     let srcWithoutHBSTree = new Funnel(src, {
       exclude: ['**/*.hbs', '**/*.ts']
     });
 
     // Compile the TypeScript and Handlebars files into JavaScript
     const compiledHandlebarsTree = this.compiledHandlebarsTree(src);
-    const compiledTypeScriptTree = this.compiledTypeScriptTree(compiledHandlebarsTree, nodeModules)
+    const combinedConfigAndCompiledHandlebarsTree = merge([configTree, compiledHandlebarsTree]);
+    const compiledTypeScriptTree = this.compiledTypeScriptTree(combinedConfigAndCompiledHandlebarsTree, nodeModules)
 
     // the output tree from typescript only includes the output from .ts -> .js transpilation
     // and no other files from the original source tree
     const combinedHandlebarsAndTypescriptTree = merge([srcWithoutHBSTree, compiledTypeScriptTree], { overwrite: true});
 
-    // Remove top-most `src` directory so module names don't include it.
-    const resolvableTree = new Funnel(combinedHandlebarsAndTypescriptTree, {
-      srcDir: 'src'
-    });
-
-    // Build the file that maps individual modules onto the resolver's specifier
-    // keys.
-    const moduleMap = this.buildResolutionMap(resolvableTree);
-
-    // Build the resolver configuration file.
-    const resolverConfiguration = this.buildResolverConfiguration();
-
     // Merge the JavaScript source and generated module map and resolver
     // configuration files together, making sure to overwrite the stub
     // module-map.js and resolver-configuration.js in the source tree with the
     // generated ones.
-    let jsTree = merge([
-      resolvableTree,
-      moduleMap,
-      resolverConfiguration
-    ], { overwrite: true });
+    let jsTree = merge([combinedHandlebarsAndTypescriptTree, configTree], { overwrite: true });
 
     // Finally, bundle the app into a single rolled up .js file.
     return this.rollupTree(jsTree);
@@ -327,7 +314,7 @@ export default class GlimmerApp {
       inputFiles: ['**/*.js'],
       rollup: {
         format: 'umd',
-        entry: 'index.js',
+        entry: 'src/index.js',
         dest: this.outputPaths.app.js,
         sourceMap: 'inline'
       }
@@ -345,16 +332,22 @@ export default class GlimmerApp {
     });
   }
 
-  private rewriteConfigEnvironment(src) {
-    return new ConfigReplace(src, this._configTree(), {
-      configPath: this._configPath(),
-      files: [ 'config/environment.js' ],
-      patterns: this._configReplacePatterns()
-    });
+  private buildConfigTree(postTranspiledSrc) {
+    // Build the file that maps individual modules onto the resolver's specifier
+    // keys.
+    const moduleMap = this.buildResolutionMap(postTranspiledSrc);
+
+    // Build the resolver configuration file.
+    const resolverConfiguration = this.buildResolverConfiguration();
+
+    const configTree = this._configTree();
+
+    return merge([moduleMap, resolverConfiguration, configTree]);
   }
 
   private buildResolutionMap(src) {
     return new ResolutionMapBuilder(src, this._configTree(), {
+      baseDir: 'src',
       configPath: this._configPath(),
       defaultModulePrefix: this.name,
       defaultModuleConfiguration
@@ -463,7 +456,7 @@ export default class GlimmerApp {
   }
 
   protected _configPath(): string {
-    return path.join(this.name, 'config', 'environments', this.env + '.json');
+    return path.join('config', 'environments', this.env + '.json');
   }
 
   _cachedConfigTree: any;
@@ -481,7 +474,7 @@ export default class GlimmerApp {
 
     let namespacedConfigTree = new Funnel(configTree, {
       srcDir: '/',
-      destDir: this.name + '/config',
+      destDir: 'config',
       annotation: 'Funnel (config)'
     });
 

@@ -1,5 +1,6 @@
 const Rollup = require('broccoli-rollup');
 const nodeResolve = require('rollup-plugin-node-resolve');
+const commonjs = require('rollup-plugin-commonjs');
 const babel = require('rollup-plugin-babel');
 const fs = require('fs');
 const path = require('path');
@@ -14,18 +15,21 @@ class RollupWithDependencies extends Rollup {
 
   build(...args) {
     let plugins = this.rollupOptions.plugins || [];
-    let inputPath = this.inputPaths[0];
     let packageJSON = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'package.json')).toString('utf8'));
     let es5 = !(packageJSON.devDependencies['@glimmer/web-component']);
 
     plugins.push(loadWithInlineMap());
 
-    plugins.push(babel(getBabelConfig(es5)));
-
     plugins.push(nodeResolve({
       jsnext: true,
       main: true
     }));
+
+    plugins.push(commonjs({
+      extensions: [ '.js' ]
+    }));
+
+    plugins.push(babel(getBabelConfig(es5)));
 
     this.rollupOptions.plugins = plugins;
 

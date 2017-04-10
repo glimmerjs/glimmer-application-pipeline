@@ -25,18 +25,25 @@ class GlimmerTemplatePrecompiler extends Filter {
 }
 
 export function getTemplateSpecifier(rootName, relativePath) {
-  let path = relativePath.split('/');
-  path.shift();
+  let pathParts = relativePath.split('/');
+  pathParts.shift();
 
   // TODO - should use module map config to be rigorous
-  if (path[path.length - 1] === 'template.hbs') {
-    path.pop();
-  }
-  if (path[0] === 'ui') {
-    path.shift();
+  if (pathParts[pathParts.length - 1] === 'template.hbs') {
+    pathParts.pop();
   }
 
-  return 'template:/' + rootName + '/' + path.join('/');
+  if (path.extname(pathParts[pathParts.length - 1]) === '.hbs') {
+    let fileName = pathParts.pop();
+
+    pathParts.push(path.basename(fileName, '.hbs'));
+  }
+
+  if (pathParts[0] === 'ui') {
+    pathParts.shift();
+  }
+
+  return 'template:/' + rootName + '/' + pathParts.join('/');
 }
 
 export default GlimmerTemplatePrecompiler;

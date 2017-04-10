@@ -52,7 +52,8 @@ describe('glimmer-template-precompiler', function() {
     const rootName = 'some-root-name';
 
     const cases = [
-      ['ui/components/foo-bar/template.hbs', 'template:/some-root-name/components/foo-bar']
+      ['ui/components/foo-bar/template.hbs', 'template:/some-root-name/components/foo-bar'],
+      ['ui/components/foo-bar.hbs', 'template:/some-root-name/components/foo-bar'],
     ];
 
     cases.forEach(function(parts) {

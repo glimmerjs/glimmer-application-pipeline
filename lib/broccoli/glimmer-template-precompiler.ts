@@ -1,23 +1,30 @@
+const path = require('path');
 const Filter = require('broccoli-persistent-filter');
 import { precompile } from '@glimmer/compiler';
+import { PrecompileOptions, TemplateMeta } from '@glimmer/wire-format';
 
 class GlimmerTemplatePrecompiler extends Filter {
   extensions = ['hbs'];
   targetExtension = 'ts';
-  options: any;
+  rootName: string;
 
   constructor(inputNode, options) {
-    super(...arguments)
-    this.options = options || {};
+    super(inputNode, { persist: false }); // TODO: enable persistent output
+
+    this.rootName = options.rootName;
   }
 
   processString(content, relativePath) {
-    let specifier = getTemplateSpecifier(this.options.rootName, relativePath);
-    return 'export default ' + precompile(content, { meta: { specifier, '<template-meta>': true } }) + ';';
+    let specifier = getTemplateSpecifier(this.rootName, relativePath);
+    return 'export default ' + this.precompile(content, { meta: { specifier, '<template-meta>': true } }) + ';';
+  }
+
+  precompile(content: string, options: PrecompileOptions<TemplateMeta>): string {
+    return precompile(content, options);
   }
 }
 
-function getTemplateSpecifier(rootName, relativePath) {
+export function getTemplateSpecifier(rootName, relativePath) {
   let path = relativePath.split('/');
   path.shift();
 

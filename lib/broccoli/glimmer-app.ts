@@ -19,6 +19,8 @@ const ResolverConfigurationBuilder = require('@glimmer/resolver-configuration-bu
 const BroccoliSource = require('broccoli-source');
 const WatchedDir = BroccoliSource.WatchedDir;
 const UnwatchedDir = BroccoliSource.UnwatchedDir;
+const SilentError = require('silent-error');
+const stripIndent = require('common-tags').stripIndent;
 
 import RollupWithDependencies from './rollup-with-dependencies';
 import GlimmerTemplatePrecompiler from './glimmer-template-precompiler';
@@ -143,6 +145,7 @@ export default class GlimmerApp {
 
     this.trees = this.buildTrees(options);
     this.outputPaths = this.buildOutputPaths(options);
+    this.detectInvalidBlueprint(options);
   }
 
   private _configReplacePatterns() {
@@ -481,5 +484,35 @@ export default class GlimmerApp {
     this._cachedConfigTree = maybeDebug(namespacedConfigTree, 'config-tree');
 
     return this._cachedConfigTree;
+  }
+
+  private detectInvalidBlueprint(options) {
+    let srcPath = options.trees && options.trees.src || 'src';
+    let resolvedSrcPath;
+
+    if (typeof srcPath === 'string') {
+      resolvedSrcPath = this.resolveLocal(srcPath)
+    }
+
+    if (!resolvedSrcPath || !existsSync(resolvedSrcPath)) { return; } // cannot do detection
+    let mainPath = path.join(resolvedSrcPath, 'main.ts');
+
+    if (existsSync(mainPath)) {
+      let mainContents = fs.readFileSync(path.join(resolvedSrcPath, 'main.ts')).toString();
+
+      let hasModuleMapInSrc = mainContents.includes(`'./config/module-map`) || mainContents.includes(`"./config/module-map"`);
+      let hasResolverConfigInSrc = mainContents.includes(`'./config/resolver-configuration`) || mainContents.includes(`"./config/resolver-configuration`);
+
+      if (hasModuleMapInSrc || hasResolverConfigInSrc) {
+        throw new SilentError(stripIndent`
+          Updates to your project structure are required to run with this version of @glimmer/application-pipeline.
+
+          Please update your project by running:
+
+            yarn upgrade @glimmer/blueprint
+            ember init -b @glimmer/blueprint
+        `);
+      }
+    }
   }
 }

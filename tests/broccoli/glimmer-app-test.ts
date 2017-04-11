@@ -87,6 +87,22 @@ describe('glimmer-app', function() {
         expect(app.env).to.equal('test');
       })
     })
+
+    describe('invalid blueprint detection', function() {
+      it('provides nice error when project contains older blueprint contents', function() {
+        input.write({
+          'src': {
+            'main.ts': "import moduleMap from './config/module-map';",
+            'ui': {
+              'index.html': 'src',
+            },
+          },
+          'config': {},
+        });
+
+        expect(() => createApp()).to.throw(/Updates to your project structure are required to run with this version of @glimmer\/application-pipeline./);
+      });
+    });
   });
 
   describe('htmlTree', function() {

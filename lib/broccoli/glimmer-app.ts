@@ -5,13 +5,12 @@ const ConfigLoader = require('broccoli-config-loader');
 const ConfigReplace = require('broccoli-config-replace');
 
 const Funnel = require('broccoli-funnel');
-const concat = require('broccoli-concat');
 const path  = require('path');
 const fs = require('fs');
 const typescript = require('broccoli-typescript-compiler').typescript;
 const existsSync = require('exists-sync');
 const merge = require('broccoli-merge-trees');
-const compileSass = require('broccoli-sass');
+const StyleManifest = require('broccoli-style-manifest');
 const assetRev = require('broccoli-asset-rev');
 const uglify = require('broccoli-uglify-sourcemap');
 const ResolutionMapBuilder = require('@glimmer/resolution-map-builder');
@@ -68,6 +67,15 @@ export interface OutputPaths {
     css: string;
   }
 }
+
+export interface StyleConfig {
+  colocation?: boolean;
+  preprocessor?: {
+    type?: any;
+    extensions?: Array<string>;
+    options?: object;
+  }
+}
 export interface EmberCLIDefaults {
   project: Project
 }
@@ -84,6 +92,7 @@ export interface GlimmerAppOptions {
     src?: Tree | string;
     nodeModules?: Tree | string;
   }
+  styleConfig?: StyleConfig;
 }
 
 export interface Addon {
@@ -124,6 +133,7 @@ export default class GlimmerApp {
   public name: string;
   public env: 'production' | 'development' | 'test';
   private outputPaths: OutputPaths;
+  private styleConfig: StyleConfig;
 
   protected trees: Trees;
 
@@ -143,6 +153,7 @@ export default class GlimmerApp {
 
     this.trees = this.buildTrees(options);
     this.outputPaths = this.buildOutputPaths(options);
+    this.styleConfig = this.buildStyleConfig(options);
   }
 
   private _configReplacePatterns() {
@@ -162,6 +173,18 @@ export default class GlimmerApp {
         js: 'app.js',
         css: 'app.css'
       }
+    });
+  }
+
+  private buildStyleConfig(options: GlimmerAppOptions): StyleConfig {
+    return defaultsDeep({
+      preprocessor: {
+        type: require('broccoli-sass'),
+        extensions: ['css', 'scss'],
+        options: {}
+      }
+    }, options.styleConfig, {
+      colocation: false
     });
   }
 
@@ -370,28 +393,43 @@ export default class GlimmerApp {
   }
 
   private cssTree() {
-    // should really make SASS support to be opt-in, so that
-    // we can properly honor the `GlimmerAppOptions.trees.src`
-    // abstraction here, but for now we still require `src` to be a
-    // "real" path on disk that we check
-    let stylesPath = path.join(this.resolveLocal('src'), 'ui', 'styles');
+    const cssName = this.outputPaths.app.css;
+    const {
+      type: preprocessor,
+      options,
+      extensions,
+    } = this.styleConfig.preprocessor;
 
-    if (fs.existsSync(stylesPath)) {
-      // Compile SASS if app.scss is present
-      // (this works with imports from app.scss)
-      let scssPath = path.join(stylesPath, 'app.scss');
-      if (fs.existsSync(scssPath)) {
-        return compileSass([stylesPath], 'app.scss', this.outputPaths.app.css, {
-          annotation: 'Funnel: scss'
-        });
+    let stylesTree = this.trees.src;
+    if (!this.styleConfig.colocation) {
+      stylesTree = path.join(this.resolveLocal('src'), 'ui', 'styles');
+      if (!fs.existsSync(stylesTree)) {
+        return undefined;
       }
-
-      // Otherwise concat all the css in the styles dir
-      return concat(new Funnel(stylesPath, {
-        include: ['**/*.css'],
-        annotation: 'Funnel: css'}),
-        { outputFile: this.outputPaths.app.css });
     }
+
+    const styles = new Funnel(stylesTree, {
+      include: [`**/*.{${extensions.join(',')},}`],
+      // for simplicty sake, convert all css files to scss files
+      // inorder to facilitate importing
+      getDestinationPath(relativePath) {
+        return relativePath.replace(/\.css$/, '.scss');
+      },
+      annotation: 'Funnel: all style files'
+    });
+
+    const styleManifestFileName = '__glimmer_app_manifest';
+    const styleManifest = new StyleManifest(styles, {
+      outputFileNameWithoutExtension: styleManifestFileName,
+      defaultExtension: 'scss',
+      annotation: 'StyleManifest: css'
+    });
+
+    return preprocessor([
+      merge([styles, styleManifest])
+    ], `${styleManifestFileName}.scss`, cssName, defaultsDeep({
+      annotation: 'Funnel: scss'
+    }, options));
   }
 
   private publicTree() {

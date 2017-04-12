@@ -60,7 +60,11 @@ describe('glimmer-app', function() {
       });
 
       afterEach(function() {
-        process.env.EMBER_ENV = ORIGINAL_EMBER_ENV;
+        if (ORIGINAL_EMBER_ENV) {
+          process.env.EMBER_ENV = ORIGINAL_EMBER_ENV;
+        } else {
+          delete process.env.EMBER_ENV;
+        }
       });
 
       it('sets an `env`', function() {
@@ -83,6 +87,22 @@ describe('glimmer-app', function() {
         expect(app.env).to.equal('test');
       })
     })
+
+    describe('invalid blueprint detection', function() {
+      it('provides nice error when project contains older blueprint contents', function() {
+        input.write({
+          'src': {
+            'main.ts': "import moduleMap from './config/module-map';",
+            'ui': {
+              'index.html': 'src',
+            },
+          },
+          'config': {},
+        });
+
+        expect(() => createApp()).to.throw(/Updates to your project structure are required to run with this version of @glimmer\/application-pipeline./);
+      });
+    });
   });
 
   describe('htmlTree', function() {
@@ -371,7 +391,7 @@ describe('glimmer-app', function() {
     it('builds a module map', async function() {
       input.write({
         'src': {
-          'index.ts': 'import moduleMap from "./config/module-map"; console.log(moduleMap);',
+          'index.ts': 'import moduleMap from "../config/module-map"; console.log(moduleMap);',
           'ui': {
             'index.html': 'src',
             'components': {
@@ -392,13 +412,13 @@ describe('glimmer-app', function() {
       let actual = output.read();
 
       expect(actual['index.html']).to.equal('src');
-      expect(actual['app.js']).to.include('component:/glimmer-app-test/components/foo-bar');
+      expect(actual['app.js']).to.include('template:/glimmer-app-test/components/foo-bar');
     });
 
     it('includes resolver config', async function() {
       input.write({
         'src': {
-          'index.ts': 'import resolverConfig from "./config/resolver-configuration"; console.log(resolverConfig);',
+          'index.ts': 'import resolverConfig from "../config/resolver-configuration"; console.log(resolverConfig);',
           'ui': {
             'index.html': 'src'
           }

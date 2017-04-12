@@ -74,6 +74,15 @@ export interface EmberCLIDefaults {
   project: Project
 }
 
+// documented rollup options from
+// https://github.com/rollup/rollup/wiki/JavaScript-API#rolluprollup-options-
+export interface RollupOptions {
+  plugins?: any[],
+  treeshake?: boolean,
+  external?: string[] | ((id: string) => boolean);
+  paths?: { [importId: string]: string } | ((id: string) => string);
+}
+
 export interface GlimmerAppOptions {
   outputPaths?: {
     app?: {
@@ -86,6 +95,7 @@ export interface GlimmerAppOptions {
     src?: Tree | string;
     nodeModules?: Tree | string;
   }
+  rollup?: RollupOptions;
 }
 
 export interface Addon {
@@ -126,6 +136,7 @@ export default class GlimmerApp {
   public name: string;
   public env: 'production' | 'development' | 'test';
   private outputPaths: OutputPaths;
+  private rollupOptions: RollupOptions;
 
   protected trees: Trees;
 
@@ -143,6 +154,7 @@ export default class GlimmerApp {
     this.project = defaults.project;
     this.name = this.project.name();
 
+    this.rollupOptions = options.rollup || {};
     this.trees = this.buildTrees(options);
     this.outputPaths = this.buildOutputPaths(options);
     this.detectInvalidBlueprint(options);
@@ -313,14 +325,16 @@ export default class GlimmerApp {
   }
 
   private rollupTree(jsTree) {
-    return new RollupWithDependencies(maybeDebug(jsTree, 'rollup-input-tree'), {
-      inputFiles: ['**/*.js'],
-      rollup: {
+    let rollupOptions = Object.assign({}, this.rollupOptions, {
         format: 'umd',
         entry: 'src/index.js',
         dest: this.outputPaths.app.js,
         sourceMap: 'inline'
-      }
+    });
+
+    return new RollupWithDependencies(maybeDebug(jsTree, 'rollup-input-tree'), {
+      inputFiles: ['**/*.js'],
+      rollup: rollupOptions
     });
   }
 

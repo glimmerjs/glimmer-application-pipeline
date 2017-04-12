@@ -469,5 +469,39 @@ describe('glimmer-app', function() {
 
       expect(actual['foo-bar-file.js']).to.be.defined;
     });
+
+    it('allows specifying rollup options', async function() {
+      input.write({
+        'src': {
+          'index.ts': 'console.log("NOW YOU SEE ME");',
+          'ui': {
+            'index.html': 'src'
+          }
+        },
+        'config': {},
+        'tsconfig.json': tsconfigContents
+      });
+
+      let app = createApp({
+        trees: {
+          nodeModules: path.join(__dirname, '..', '..', '..', 'node_modules')
+        },
+        rollup: {
+          plugins: [
+            {
+              name: 'test-replacement',
+              transform(code, id) {
+                return code.replace('NOW YOU SEE ME', 'NOW YOU DON\'T');
+              }
+            }
+          ]
+        }
+      });
+
+      let output = await buildOutput(app.toTree());
+      let actual = output.read();
+
+      expect(actual['app.js']).to.include('NOW YOU DON\'T');
+    });
   });
 });

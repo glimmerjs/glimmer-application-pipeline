@@ -3,6 +3,10 @@ const nodeResolve = require('rollup-plugin-node-resolve');
 const babel = require('rollup-plugin-babel');
 const fs = require('fs');
 
+function hasPlugin(plugins, name) {
+  return plugins.some(plugin => plugin.name === name);
+}
+
 class RollupWithDependencies extends Rollup {
   rollupOptions: any;
   inputPaths: any[];
@@ -12,24 +16,28 @@ class RollupWithDependencies extends Rollup {
 
     plugins.push(loadWithInlineMap());
 
-    plugins.push(babel({
-      presets: [
-        [
-          'es2015',
-          { modules: false }
-        ]
-      ],
-      plugins: [
-        'external-helpers'
-      ],
-      sourceMaps: 'inline',
-      retainLines: false
-    }));
+    if (!hasPlugin(plugins, 'babel')) {
+      plugins.push(babel({
+        presets: [
+          [
+            'es2015',
+            { modules: false }
+          ]
+        ],
+        plugins: [
+          'external-helpers'
+        ],
+        sourceMaps: 'inline',
+        retainLines: false
+      }));
+    }
 
-    plugins.push(nodeResolve({
-      jsnext: true,
-      module: true
-    }));
+    if (!hasPlugin(plugins, 'resolve')) {
+      plugins.push(nodeResolve({
+        jsnext: true,
+        module: true
+      }));
+    }
 
     this.rollupOptions.plugins = plugins;
 

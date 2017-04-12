@@ -28,7 +28,7 @@ class RollupWithDependencies extends Rollup {
 
     plugins.push(nodeResolve({
       jsnext: true,
-      main: true
+      module: true
     }));
 
     this.rollupOptions.plugins = plugins;

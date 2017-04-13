@@ -6,6 +6,7 @@ import { buildOutput, createTempDir, TempDir } from 'broccoli-test-helper';
 
 const MockCLI = require('ember-cli/tests/helpers/mock-cli');
 const Project = require('ember-cli/lib/models/project');
+const stew = require('broccoli-stew');
 
 const { stripIndent } = require('common-tags');
 
@@ -26,11 +27,12 @@ describe('glimmer-app', function() {
     return input.dispose();
   });
 
-  function createApp(options: GlimmerAppOptions = {}) {
+  function createApp(options: GlimmerAppOptions = {}, addons = []): GlimmerApp {
     let pkg = { name: 'glimmer-app-test' };
 
     let cli = new MockCLI();
     let project = new Project(input.path(), pkg, cli.ui, cli);
+    project.addons = addons;
 
     return new GlimmerApp({
       project
@@ -101,6 +103,38 @@ describe('glimmer-app', function() {
         });
 
         expect(() => createApp()).to.throw(/Updates to your project structure are required to run with this version of @glimmer\/application-pipeline./);
+      });
+    });
+  });
+
+  describe('buildTree', function() {
+    it('invokes preprocessTree on addons that are present', async function() {
+      input.write({
+        'src': {
+          'ui': {
+            'index.html': 'src',
+          },
+        },
+        'config': {},
+      });
+
+      let app = createApp({}, [
+        {
+          name: 'awesome-reverser',
+          preprocessTree(type, tree) {
+            return stew.map(tree, (contents) => contents.split('').reverse().join(''));
+          }
+        }
+      ]);
+
+      let output = await buildOutput(app['trees'].src);
+
+      expect(output.read()).to.deep.equal({
+        'src': {
+          'ui': {
+            'index.html': 'crs',
+          }
+        }
       });
     });
   });

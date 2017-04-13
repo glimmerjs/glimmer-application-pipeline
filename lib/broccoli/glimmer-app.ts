@@ -25,6 +25,7 @@ const stripIndent = require('common-tags').stripIndent;
 import RollupWithDependencies from './rollup-with-dependencies';
 import GlimmerTemplatePrecompiler from './glimmer-template-precompiler';
 import defaultModuleConfiguration from './default-module-configuration';
+import addonProcessTree from '../utils/addon-process-tree';
 
 //const Logger = require('heimdalljs-logger');
 //const logger = Logger('@glimmer/application-pipeline:glimmer-app');
@@ -194,6 +195,8 @@ export default class GlimmerApp {
       srcTree = new Funnel(srcTree, {
         destDir: 'src'
       });
+
+      srcTree = addonProcessTree(this.project, 'preprocessTree', 'src', srcTree);
     }
 
     let nodeModulesTree = options.trees && options.trees.nodeModules || new UnwatchedDir(this.resolveLocal('node_modules'));
@@ -301,6 +304,7 @@ export default class GlimmerApp {
     // module-map.js and resolver-configuration.js in the source tree with the
     // generated ones.
     let jsTree = merge([combinedHandlebarsAndTypescriptTree, configTree], { overwrite: true });
+
 
     // Finally, bundle the app into a single rolled up .js file.
     return this.rollupTree(jsTree);

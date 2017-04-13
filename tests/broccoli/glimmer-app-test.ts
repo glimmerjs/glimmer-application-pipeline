@@ -469,5 +469,34 @@ describe('glimmer-app', function() {
 
       expect(actual['foo-bar-file.js']).to.be.defined;
     });
+
+    it('includes custom provided resolver configuration', async function() {
+      input.write({
+        'src': {
+          'index.ts': 'import resolverConfig from "./config/resolver-configuration"; console.log(resolverConfig);',
+          'ui': {
+            'index.html': 'src'
+          },
+
+          'config': {
+            'resolver-map.js': '"custom resolver map"'
+          },
+        },
+
+        'config': {
+          'resolver-map.js': '"custom resolver map"'
+        },
+      });
+
+      let app = createApp({
+        trees: {
+          nodeModules: path.join(__dirname, '..', '..', '..', 'node_modules')
+        }
+      });
+      let output = await buildOutput(app.toTree());
+      let actual = output.read();
+
+      expect(actual['app.js']).to.include('"custom resolver map"');
+    });
   });
 });

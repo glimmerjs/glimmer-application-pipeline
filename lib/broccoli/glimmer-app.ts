@@ -182,6 +182,10 @@ export default class GlimmerApp extends AbstractBuild {
     this['_notifyAddonIncluded']();
   }
 
+  public import() {
+    throw new Error('app.import is not yet implemented for GlimmerApp');
+  }
+
   private _configReplacePatterns() {
     return [{
       match: /\{\{rootURL\}\}/g,

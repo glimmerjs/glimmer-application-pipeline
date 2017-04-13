@@ -116,6 +116,7 @@ export interface GlimmerAppOptions {
 
 export interface Addon {
   contentFor: (type: string, config, content: string[]) => string;
+  preprocessTree: (type: string, tree: Tree) => Tree;
 }
 
 export interface Project {
@@ -124,8 +125,15 @@ export interface Project {
   configPath(): string;
   addons: Addon[];
 
+  findAddonByName(name: string): Addon | null;
+
   pkg: {
     name: string;
+  }
+
+  ui: {
+    writeLine(contents: string);
+    writeWarnLine(contents: string);
   }
 }
 
@@ -260,17 +268,12 @@ export default class GlimmerApp extends AbstractBuild {
    * @param options
    */
   public toTree() {
-    let isProduction = process.env.EMBER_ENV === 'production';
-
     let jsTree = this.javascriptTree();
     let cssTree = this.cssTree();
     let publicTree = this.publicTree();
     let htmlTree = this.htmlTree();
+    let missingPackages = [];
 
-    // Minify the JavaScript in production builds.
-    if (isProduction) {
-      jsTree = this.minifyTree(jsTree);
-    }
 
     let trees = [jsTree, htmlTree];
     if (cssTree) {
@@ -282,16 +285,19 @@ export default class GlimmerApp extends AbstractBuild {
 
     let appTree = merge(trees);
 
-    // Fingerprint assets for cache busting in production.
-    if (isProduction) {
-      let extensions = ['js', 'css'];
-      let replaceExtensions = ['html', 'js', 'css'];
+    appTree = this.maybePerformDeprecatedUglify(appTree, missingPackages);
+    appTree = this.maybePerformDeprecatedAssetRev(appTree, missingPackages);
 
-      appTree = assetRev(appTree, {
-        extensions,
-        replaceExtensions
-      });
+    if (missingPackages.length > 0) {
+      this.project.ui.writeWarnLine(
+`This project is relying on behaviors provided by @glimmer/application-pipeline that will be removed in future versions. The underlying functionality has now been migrated to be performed by addons in your project.
+
+Please run the following to resolve this warning:
+
+  ${missingPackages.join('\n  ')}`);
     }
+
+    appTree = addonProcessTree(this.project, 'postprocessTree', 'all', appTree);
 
     return appTree;
   }
@@ -354,17 +360,6 @@ export default class GlimmerApp extends AbstractBuild {
     return new RollupWithDependencies(maybeDebug(jsTree, 'rollup-input-tree'), {
       inputFiles: ['**/*.js'],
       rollup: rollupOptions
-    });
-  }
-
-  private minifyTree(jsTree) {
-    return uglify(jsTree, {
-      compress: {
-        screw_ie8: true,
-      },
-      sourceMapConfig: {
-        enabled: false
-      }
     });
   }
 
@@ -517,6 +512,48 @@ export default class GlimmerApp extends AbstractBuild {
     this._cachedConfigTree = maybeDebug(namespacedConfigTree, 'config-tree');
 
     return this._cachedConfigTree;
+  }
+
+  private maybePerformDeprecatedUglify(appTree, missingPackagesForDeprecationMessage) {
+    let isProduction = process.env.EMBER_ENV === 'production';
+
+    // if the project does not have broccoli-asset-rev itself
+    // process it with a warning/deprecation
+    if (isProduction && !this.project.findAddonByName('broccoli-asset-rev')) {
+      missingPackagesForDeprecationMessage.push('ember install ember-cli-uglify');
+
+      appTree = uglify(appTree, {
+        compress: {
+          screw_ie8: true,
+        },
+        sourceMapConfig: {
+          enabled: false
+        }
+      });
+    }
+
+    return appTree;
+  }
+
+  private maybePerformDeprecatedAssetRev(appTree, missingPackagesForDeprecationMessage) {
+    let isProduction = process.env.EMBER_ENV === 'production';
+
+    // if the project does not have broccoli-asset-rev itself
+    // process it with a warning/deprecation
+    if (isProduction && !this.project.findAddonByName('broccoli-asset-rev')) {
+      missingPackagesForDeprecationMessage.push('ember install broccoli-asset-rev');
+
+      // Fingerprint assets for cache busting in production.
+      let extensions = ['js', 'css'];
+      let replaceExtensions = ['html', 'js', 'css'];
+
+      appTree = assetRev(appTree, {
+        extensions,
+        replaceExtensions
+      });
+    }
+
+    return appTree;
   }
 
   private detectInvalidBlueprint(options) {

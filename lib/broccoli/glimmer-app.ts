@@ -272,8 +272,8 @@ export default class GlimmerApp extends AbstractBuild {
     let cssTree = this.cssTree();
     let publicTree = this.publicTree();
     let htmlTree = this.htmlTree();
+    let missingPackages = [];
 
-    jsTree = this.maybePerformDeprecatedUglify(jsTree);
 
     let trees = [jsTree, htmlTree];
     if (cssTree) {
@@ -285,7 +285,17 @@ export default class GlimmerApp extends AbstractBuild {
 
     let appTree = merge(trees);
 
-    appTree = this.maybePerformDeprecatedAssetRev(appTree);
+    appTree = this.maybePerformDeprecatedUglify(appTree, missingPackages);
+    appTree = this.maybePerformDeprecatedAssetRev(appTree, missingPackages);
+
+    if (missingPackages.length > 0) {
+      this.project.ui.writeWarnLine(
+`This project is relying on behaviors provided by @glimmer/application-pipeline that will be removed in future versions. The underlying functionality has now been migrated to be performed by addons in your project.
+
+Please run the following to resolve this warning:
+
+  ${missingPackages.join('\n  ')}`);
+    }
 
     appTree = addonProcessTree(this.project, 'postprocessTree', 'all', appTree);
 
@@ -504,19 +514,13 @@ export default class GlimmerApp extends AbstractBuild {
     return this._cachedConfigTree;
   }
 
-  private maybePerformDeprecatedUglify(appTree) {
+  private maybePerformDeprecatedUglify(appTree, missingPackagesForDeprecationMessage) {
     let isProduction = process.env.EMBER_ENV === 'production';
 
     // if the project does not have broccoli-asset-rev itself
     // process it with a warning/deprecation
     if (isProduction && !this.project.findAddonByName('broccoli-asset-rev')) {
-      this.project.ui.writeWarnLine(stripIndent`
-        This project is relying on minification being performed by @glimmer/application-pipeline. That functionality has now been migrated to be performed by addons in your project.
-
-        Please run the following to resolve this warning:
-
-          ember install ember-cli-uglify
-      `);
+      missingPackagesForDeprecationMessage.push('ember install ember-cli-uglify');
 
       appTree = uglify(appTree, {
         compress: {
@@ -531,19 +535,13 @@ export default class GlimmerApp extends AbstractBuild {
     return appTree;
   }
 
-  private maybePerformDeprecatedAssetRev(appTree) {
+  private maybePerformDeprecatedAssetRev(appTree, missingPackagesForDeprecationMessage) {
     let isProduction = process.env.EMBER_ENV === 'production';
 
     // if the project does not have broccoli-asset-rev itself
     // process it with a warning/deprecation
     if (isProduction && !this.project.findAddonByName('broccoli-asset-rev')) {
-      this.project.ui.writeWarnLine(stripIndent`
-        This project is relying on asset fingerprinting from @glimmer/application-pipeline. That functionality has now been migrated to be performed by addons in your project.
-
-        Please run the following to resolve this warning:
-
-          ember install broccoli-asset-rev
-      `);
+      missingPackagesForDeprecationMessage.push('ember install broccoli-asset-rev');
 
       // Fingerprint assets for cache busting in production.
       let extensions = ['js', 'css'];

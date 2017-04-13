@@ -1,14 +1,13 @@
 'use strict';
 const ConfigLoader = require('broccoli-config-loader');
 const ConfigReplace = require('broccoli-config-replace');
-
 const Funnel = require('broccoli-funnel');
 const concat = require('broccoli-concat');
 const path  = require('path');
 const fs = require('fs');
 const typescript = require('broccoli-typescript-compiler').typescript;
 const existsSync = require('exists-sync');
-const merge = require('broccoli-merge-trees');
+const MergeTrees = require('broccoli-merge-trees');
 const compileSass = require('broccoli-sass');
 const assetRev = require('broccoli-asset-rev');
 const uglify = require('broccoli-uglify-sourcemap');
@@ -18,25 +17,22 @@ const BroccoliSource = require('broccoli-source');
 const WatchedDir = BroccoliSource.WatchedDir;
 const UnwatchedDir = BroccoliSource.UnwatchedDir;
 const SilentError = require('silent-error');
+const p = require('ember-cli-preprocess-registry/preprocessors');
 const stripIndent = require('common-tags').stripIndent;
 const utils = require('ember-build-utilities');
 const addonProcessTree = utils.addonProcessTree;
 const GlimmerTemplatePrecompiler = utils.GlimmerTemplatePrecompiler;
+const resolveLocal = utils.resolveLocal;
+const setupRegistry = p.setupRegistry;
+const defaultRegistry = p.defaultRegistry;
+const preprocessJs = p.preprocessJs;
 
 import RollupWithDependencies from './rollup-with-dependencies';
 import defaultModuleConfiguration from './default-module-configuration';
 
-//const Logger = require('heimdalljs-logger');
-//const logger = Logger('@glimmer/application-pipeline:glimmer-app');
-
-
-import { TypeScript } from 'broccoli-typescript-compiler/lib/plugin';
 
 export interface AbstractBuild {
   _notifyAddonIncluded(): void;
-  typescriptTree(tree: Tree, tsConfig: {}): Tree;
-  esLatestTree(tree: Tree): Tree;
-  esTree(tree: Tree): Tree;
   package(jsTree: Tree, cssTree: Tree, publicTree: Tree, htmlTree: Tree): Tree;
 }
 
@@ -73,6 +69,15 @@ const DEFAULT_TS_OPTIONS = {
   }
 };
 
+export interface AbstractBuild {
+  _notifyAddonIncluded(): void;
+  package(jsTree: Tree, cssTree: Tree, publicTree: Tree, htmlTree: Tree): Tree;
+}
+
+export interface Registry {
+  add(type: string, plugin: Function)
+}
+
 export interface OutputPaths {
   app: {
     html: string;
@@ -105,6 +110,7 @@ export interface GlimmerAppOptions {
     src?: Tree | string;
     nodeModules?: Tree | string;
   }
+  registry?: Registry;
   rollup?: RollupOptions;
 }
 
@@ -154,6 +160,7 @@ export default class GlimmerApp extends AbstractBuild {
   public project: Project;
   public name: string;
   public env: 'production' | 'development' | 'test';
+  private registry: Registry;
   private outputPaths: OutputPaths;
   private rollupOptions: RollupOptions;
   protected options;
@@ -195,10 +202,15 @@ export default class GlimmerApp extends AbstractBuild {
 
     super(defaults, options);
 
+    this.registry = options.registry || defaultRegistry(this);
+
     this.env = process.env.EMBER_ENV || 'development';
     this.name = this.project.name();
 
     this.rollupOptions = options.rollup;
+
+    setupRegistry(this);
+
     this.trees = this.buildTrees(options);
     this.outputPaths = options.outputPaths as OutputPaths;
     this.detectInvalidBlueprint(options);
@@ -222,11 +234,12 @@ export default class GlimmerApp extends AbstractBuild {
 
   private buildTrees(options: GlimmerAppOptions): Trees {
     let srcTree = options.trees && options.trees.src;
+    let { project: { root } } = this;
 
     if (typeof srcTree === 'string') {
-      srcTree = new WatchedDir(this.resolveLocal(srcTree));
+      srcTree = new WatchedDir(resolveLocal(root, srcTree));
     } else if (!srcTree) {
-      let srcPath = this.resolveLocal('src');
+      let srcPath = resolveLocal(root, 'src');
       srcTree = existsSync(srcPath) ? new WatchedDir(srcPath) : null;
     }
 
@@ -238,7 +251,7 @@ export default class GlimmerApp extends AbstractBuild {
       srcTree = addonProcessTree(this.project, 'preprocessTree', 'src', srcTree);
     }
 
-    let nodeModulesTree = options.trees && options.trees.nodeModules || new UnwatchedDir(this.resolveLocal('node_modules'));
+    let nodeModulesTree = options.trees && options.trees.nodeModules || new UnwatchedDir(resolveLocal(root, 'node_modules'));
 
     if (nodeModulesTree) {
       nodeModulesTree = new Funnel(nodeModulesTree, {
@@ -252,17 +265,8 @@ export default class GlimmerApp extends AbstractBuild {
     }
   }
 
-  private resolveLocal(to: string) {
-    // return argument if it is absolute
-    if (to[0] === '/') {
-      return to;
-    }
-
-    return path.join(this.project.root, to);
-  }
-
   private tsOptions() {
-    let tsconfigPath = this.resolveLocal('tsconfig.json');
+    let tsconfigPath = resolveLocal(this.project.root, 'tsconfig.json');
     let tsconfig;
 
     if (existsSync(tsconfigPath)) {
@@ -278,19 +282,40 @@ export default class GlimmerApp extends AbstractBuild {
     return tsconfig ? { tsconfig } : DEFAULT_TS_OPTIONS;
   }
 
-  /**
-   * Creates a Broccoli tree representing the compiled Glimmer application.
-   *
-   * @param options
-   */
-  public toTree() {
-    let jsTree = this.javascriptTree();
-    let cssTree = this.cssTree();
-    let publicTree = this.publicTree();
-    let htmlTree = this.htmlTree();
+  private javascript() {
+    let { src, nodeModules } = this.trees;
+    let tsConfig = this.tsOptions();
+    let configTree = this.buildConfigTree(src);
+    let srcWithoutHBSTree = new Funnel(src, {
+      exclude: ['**/*.hbs', '**/*.ts']
+    });
+
+    // Compile the TypeScript and Handlebars files into JavaScript
+    let compiledHandlebarsTree = this.compiledHandlebarsTree(src);
+    let combinedConfigAndCompiledHandlebarsTree = new MergeTrees([configTree, compiledHandlebarsTree]);
+
+    // the output tree from typescript only includes the output from .ts -> .js transpilation
+    // and no other files from the original source tree
+    let transpiledTypescriptTree = this.compiledTypeScriptTree(combinedConfigAndCompiledHandlebarsTree, nodeModules, tsConfig);
+
+    // Merge the JavaScript source and generated module map and resolver
+    // configuration files together, making sure to overwrite the stub
+    // module-map.js and resolver-configuration.js in the source tree with the
+    // generated ones.
+    transpiledTypescriptTree = new MergeTrees([srcWithoutHBSTree, transpiledTypescriptTree, configTree], { overwrite: true });
+
+    return this.processESLastest(transpiledTypescriptTree);
+  }
+
+  private processESLastest(tree: Tree): Tree {
+    return preprocessJs(tree, '/', this.name, {
+      registry: this.registry
+    });
+  }
+
+  public package(jsTree, cssTree, publicTree, htmlTree): Tree {
     let missingPackages = [];
-
-
+    jsTree = this.rollupTree(jsTree);
     let trees = [jsTree, htmlTree];
     if (cssTree) {
       trees.push(cssTree);
@@ -299,7 +324,7 @@ export default class GlimmerApp extends AbstractBuild {
       trees.push(publicTree);
     }
 
-    let appTree = merge(trees);
+    let appTree = new MergeTrees(trees);
 
     appTree = this.maybePerformDeprecatedUglify(appTree, missingPackages);
     appTree = this.maybePerformDeprecatedAssetRev(appTree, missingPackages);
@@ -314,45 +339,27 @@ Please run the following to resolve this warning:
     }
 
     appTree = addonProcessTree(this.project, 'postprocessTree', 'all', appTree);
-
     return appTree;
   }
 
-  private javascriptTree() {
-    let { src, nodeModules } = this.trees;
+  /**
+   * Creates a Broccoli tree representing the compiled Glimmer application.
+   *
+   * @param options
+   */
+  public toTree() {
+    let jsTree = this.javascript();
+    let cssTree = this.cssTree();
+    let publicTree = this.publicTree();
+    let htmlTree = this.htmlTree();
 
-    const configTree = this.buildConfigTree(src);
-
-    let srcWithoutHBSTree = new Funnel(src, {
-      exclude: ['**/*.hbs', '**/*.ts']
-    });
-
-    // Compile the TypeScript and Handlebars files into JavaScript
-    const compiledHandlebarsTree = this.compiledHandlebarsTree(src);
-    const combinedConfigAndCompiledHandlebarsTree = merge([configTree, compiledHandlebarsTree]);
-    const compiledTypeScriptTree = this.compiledTypeScriptTree(combinedConfigAndCompiledHandlebarsTree, nodeModules)
-
-    // the output tree from typescript only includes the output from .ts -> .js transpilation
-    // and no other files from the original source tree
-    const combinedHandlebarsAndTypescriptTree = merge([srcWithoutHBSTree, compiledTypeScriptTree], { overwrite: true});
-
-    // Merge the JavaScript source and generated module map and resolver
-    // configuration files together, making sure to overwrite the stub
-    // module-map.js and resolver-configuration.js in the source tree with the
-    // generated ones.
-    let jsTree = merge([combinedHandlebarsAndTypescriptTree, configTree], { overwrite: true });
-
-
-    // Finally, bundle the app into a single rolled up .js file.
-    return this.rollupTree(jsTree);
+    return this.package(jsTree, cssTree, publicTree, htmlTree);
   }
 
-  private compiledTypeScriptTree(srcTree, nodeModulesTree): TypeScript {
-    const tsOptions = this.tsOptions();
+  private compiledTypeScriptTree(srcTree: Tree, nodeModulesTree: Tree, tsConfig: {}): Tree {
+    let inputTrees = new MergeTrees([nodeModulesTree, srcTree]);
 
-    let inputTrees = merge([nodeModulesTree, srcTree]);
-
-    let compiledTypeScriptTree = typescript(inputTrees, tsOptions);
+    let compiledTypeScriptTree = typescript(inputTrees, tsConfig);
 
     return maybeDebug(compiledTypeScriptTree, 'typescript-output');
   }
@@ -367,10 +374,10 @@ Please run the following to resolve this warning:
 
   private rollupTree(jsTree) {
     let rollupOptions = Object.assign({}, this.rollupOptions, {
-        format: 'umd',
-        entry: 'src/index.js',
-        dest: this.outputPaths.app.js,
-        sourceMap: this.options.sourcemaps.enabled
+      format: 'umd',
+      entry: 'src/index.js',
+      dest: this.outputPaths.app.js,
+      sourceMap: this.options.sourcemaps.enabled
     });
 
     return new RollupWithDependencies(maybeDebug(jsTree, 'rollup-input-tree'), {
@@ -389,7 +396,7 @@ Please run the following to resolve this warning:
 
     const configTree = this._configTree();
 
-    return merge([moduleMap, resolverConfiguration, configTree]);
+    return new MergeTrees([moduleMap, resolverConfiguration, configTree]);
   }
 
   private buildResolutionMap(src) {
@@ -414,7 +421,7 @@ Please run the following to resolve this warning:
     // we can properly honor the `GlimmerAppOptions.trees.src`
     // abstraction here, but for now we still require `src` to be a
     // "real" path on disk that we check
-    let stylesPath = path.join(this.resolveLocal('src'), 'ui', 'styles');
+    let stylesPath = path.join(resolveLocal(this.project.root, 'src'), 'ui', 'styles');
 
     if (fs.existsSync(stylesPath)) {
       // Compile SASS if app.scss is present
@@ -577,7 +584,7 @@ Please run the following to resolve this warning:
     let resolvedSrcPath;
 
     if (typeof srcPath === 'string') {
-      resolvedSrcPath = this.resolveLocal(srcPath)
+      resolvedSrcPath = resolveLocal(this.project.root, srcPath)
     }
 
     if (!resolvedSrcPath || !existsSync(resolvedSrcPath)) { return; } // cannot do detection

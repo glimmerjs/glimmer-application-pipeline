@@ -32,7 +32,8 @@ describe('glimmer-app', function() {
 
     let cli = new MockCLI();
     let project = new Project(input.path(), pkg, cli.ui, cli);
-    project.addons = addons;
+    project.initializeAddons();
+    project.addons = project.addons.concat(addons);
 
     return new GlimmerApp({
       project

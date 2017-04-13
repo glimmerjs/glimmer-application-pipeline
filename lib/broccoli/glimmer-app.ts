@@ -22,10 +22,10 @@ const UnwatchedDir = BroccoliSource.UnwatchedDir;
 const SilentError = require('silent-error');
 const stripIndent = require('common-tags').stripIndent;
 
+import { AbstractBuild, addonProcessTree } from 'ember-build-utilities';
 import RollupWithDependencies from './rollup-with-dependencies';
 import GlimmerTemplatePrecompiler from './glimmer-template-precompiler';
 import defaultModuleConfiguration from './default-module-configuration';
-import addonProcessTree from '../utils/addon-process-tree';
 
 //const Logger = require('heimdalljs-logger');
 //const logger = Logger('@glimmer/application-pipeline:glimmer-app');
@@ -62,6 +62,21 @@ const DEFAULT_TS_OPTIONS = {
       '**/*.d.ts'
     ]
   }
+};
+
+const DEFAULT_GLIMMER_APP_OPTIONS = {
+  addons: {
+    blacklist: [],
+    whitelist: []
+  },
+  outputPaths: {
+      app: {
+        html: 'index.html',
+        js: 'app.js',
+        css: 'app.css'
+      }
+  },
+  rollup: {}
 };
 
 export interface OutputPaths {
@@ -132,33 +147,39 @@ export interface Tree {
  * @param {Object} [defaults]
  * @param {Object} [options=Options] Configuration options
  */
-export default class GlimmerApp {
+export default class GlimmerApp extends AbstractBuild {
   public project: Project;
   public name: string;
   public env: 'production' | 'development' | 'test';
   private outputPaths: OutputPaths;
   private rollupOptions: RollupOptions;
+  protected options;
 
   protected trees: Trees;
 
-  constructor(defaults: EmberCLIDefaults, options: GlimmerAppOptions = {}) {
+  constructor(upstreamDefaults: EmberCLIDefaults, options: GlimmerAppOptions = {}) {
     let missingProjectMessage = 'You must pass through the default arguments passed into your ember-cli-build.js file when constructing a new GlimmerApp';
     if (arguments.length === 0) {
       throw new Error(missingProjectMessage);
     }
 
-    if (!defaults.project) {
+    if (!upstreamDefaults.project) {
       throw new Error(missingProjectMessage);
     }
 
+    let defaults = Object.assign({}, upstreamDefaults, DEFAULT_GLIMMER_APP_OPTIONS);
+
+    super(defaults, options);
+
     this.env = process.env.EMBER_ENV || 'development';
-    this.project = defaults.project;
     this.name = this.project.name();
 
-    this.rollupOptions = options.rollup || {};
+    this.rollupOptions = options.rollup;
     this.trees = this.buildTrees(options);
-    this.outputPaths = this.buildOutputPaths(options);
+    this.outputPaths = options.outputPaths as OutputPaths;
     this.detectInvalidBlueprint(options);
+
+    this['_notifyAddonIncluded']();
   }
 
   private _configReplacePatterns() {
@@ -169,16 +190,6 @@ export default class GlimmerApp {
       match: /\{\{content-for ['"](.+)["']\}\}/g,
       replacement: this.contentFor.bind(this)
     }];
-  }
-
-  private buildOutputPaths(options: GlimmerAppOptions): OutputPaths {
-    return defaultsDeep({}, options.outputPaths, {
-      app: {
-        html: 'index.html',
-        js: 'app.js',
-        css: 'app.css'
-      }
-    });
   }
 
   private buildTrees(options: GlimmerAppOptions): Trees {

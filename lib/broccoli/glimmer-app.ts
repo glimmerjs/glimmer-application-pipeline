@@ -64,21 +64,6 @@ const DEFAULT_TS_OPTIONS = {
   }
 };
 
-const DEFAULT_GLIMMER_APP_OPTIONS = {
-  addons: {
-    blacklist: [],
-    whitelist: []
-  },
-  outputPaths: {
-      app: {
-        html: 'index.html',
-        js: 'app.js',
-        css: 'app.css'
-      }
-  },
-  rollup: {}
-};
-
 export interface OutputPaths {
   app: {
     html: string;
@@ -117,6 +102,7 @@ export interface GlimmerAppOptions {
 export interface Addon {
   contentFor: (type: string, config, content: string[]) => string;
   preprocessTree: (type: string, tree: Tree) => Tree;
+  included: (GlimmerApp) => void;
 }
 
 export interface Project {
@@ -175,7 +161,28 @@ export default class GlimmerApp extends AbstractBuild {
       throw new Error(missingProjectMessage);
     }
 
-    let defaults = Object.assign({}, upstreamDefaults, DEFAULT_GLIMMER_APP_OPTIONS);
+    let isProduction = process.env.EMBER_ENV === 'production';
+
+    let defaults = Object.assign({}, upstreamDefaults, {
+      addons: {
+        whitelist: null as string[] | null,
+        blacklist: null as string[] | null,
+      },
+      outputPaths: {
+        app: {
+          html: 'index.html',
+          js: 'app.js',
+          css: 'app.css'
+        }
+      },
+      rollup: { },
+      minifyJS: {
+        enabled: isProduction,
+      },
+      sourcemaps: {
+        enabled: !isProduction
+      }
+    });
 
     super(defaults, options);
 

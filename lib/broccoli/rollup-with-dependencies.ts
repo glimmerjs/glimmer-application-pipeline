@@ -13,8 +13,11 @@ class RollupWithDependencies extends Rollup {
 
   build(...args) {
     let plugins = this.rollupOptions.plugins || [];
+    let sourceMapsEnabled = !!this.rollupOptions.sourceMap;
 
-    plugins.push(loadWithInlineMap());
+    if (sourceMapsEnabled) {
+      plugins.push(loadWithInlineMap());
+    }
 
     if (!hasPlugin(plugins, 'babel')) {
       plugins.push(babel({
@@ -27,7 +30,7 @@ class RollupWithDependencies extends Rollup {
         plugins: [
           'external-helpers'
         ],
-        sourceMaps: 'inline',
+        sourceMaps: sourceMapsEnabled && 'inline',
         retainLines: false
       }));
     }

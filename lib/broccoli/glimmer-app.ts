@@ -361,7 +361,7 @@ Please run the following to resolve this warning:
         format: 'umd',
         entry: 'src/index.js',
         dest: this.outputPaths.app.js,
-        sourceMap: 'inline'
+        sourceMap: this.options.sourcemaps.enabled
     });
 
     return new RollupWithDependencies(maybeDebug(jsTree, 'rollup-input-tree'), {

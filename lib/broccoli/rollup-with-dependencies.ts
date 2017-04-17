@@ -24,7 +24,7 @@ class RollupWithDependencies extends Rollup {
         presets: [
           [
             'es2015',
-            { modules: false }
+            { modules: false, loose: true }
           ]
         ],
         plugins: [

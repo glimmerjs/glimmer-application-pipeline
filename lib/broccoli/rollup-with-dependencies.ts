@@ -1,4 +1,3 @@
-const Rollup = require('broccoli-rollup');
 const nodeResolve = require('rollup-plugin-node-resolve');
 const babel = require('rollup-plugin-babel');
 const fs = require('fs');
@@ -6,6 +5,14 @@ const fs = require('fs');
 function hasPlugin(plugins, name) {
   return plugins.some(plugin => plugin.name === name);
 }
+
+export interface Rollup {
+  build()
+}
+
+export const Rollup: {
+  new (inputNode: any, options?: {}): Rollup;
+} = require('broccoli-rollup');
 
 class RollupWithDependencies extends Rollup {
   rollupOptions: any;

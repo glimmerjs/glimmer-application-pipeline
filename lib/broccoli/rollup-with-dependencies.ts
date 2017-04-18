@@ -31,7 +31,7 @@ class RollupWithDependencies extends Rollup {
         presets: [
           [
             'es2015',
-            { modules: false }
+            { modules: false, loose: true }
           ]
         ],
         plugins: [
@@ -45,7 +45,29 @@ class RollupWithDependencies extends Rollup {
     if (!hasPlugin(plugins, 'resolve')) {
       plugins.push(nodeResolve({
         jsnext: true,
-        module: true
+        module: true,
+        modulesOnly: true,
+
+        // this is a temporary work around to force all @glimmer/*
+        // packages to use the `es2017` output (they are currently
+        // using `es5` output)
+        //
+        // this should be removed once the various glimmerjs/glimmer-vm
+        // packages have been updated to use the "Correct" module entry
+        // point
+        customResolveOptions:{
+          packageFilter(pkg, file) {
+            if (pkg.name.startsWith('@glimmer/')) {
+              pkg.main = 'dist/modules/es2017/index.js';
+            } else if (pkg.module) {
+              pkg.main = pkg.module;
+            } else if (pkg['jsnext:main']) {
+              pkg.main = pkg['jsnext:main'];
+            }
+
+            return pkg;
+          }
+        }
       }));
     }
 

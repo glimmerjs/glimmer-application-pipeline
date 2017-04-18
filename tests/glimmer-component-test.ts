@@ -1,12 +1,13 @@
 'use strict';
 
-let blueprintHelpers = require('ember-cli-blueprint-test-helpers/helpers');
-let setupTestHooks = blueprintHelpers.setupTestHooks;
-let emberNew = blueprintHelpers.emberNew;
-let emberGenerate = blueprintHelpers.emberGenerate;
-let emberGenerateDestroy = blueprintHelpers.emberGenerateDestroy;
+import {
+  setupTestHooks,
+  expect,
+  emberNew,
+  emberGenerate,
+  emberGenerateDestroy
+} from './helpers/helpers';
 
-let expect = require('ember-cli-blueprint-test-helpers/chai').expect;
 
 describe('Acceptance: ember generate and destroy glimmer-component', function() {
   setupTestHooks(this);

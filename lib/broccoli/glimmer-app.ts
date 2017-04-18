@@ -1,6 +1,4 @@
 'use strict';
-const defaultsDeep = require('lodash.defaultsdeep');
-
 const ConfigLoader = require('broccoli-config-loader');
 const ConfigReplace = require('broccoli-config-replace');
 
@@ -21,10 +19,11 @@ const WatchedDir = BroccoliSource.WatchedDir;
 const UnwatchedDir = BroccoliSource.UnwatchedDir;
 const SilentError = require('silent-error');
 const stripIndent = require('common-tags').stripIndent;
+const utils = require('ember-build-utilities');
+const addonProcessTree = utils.addonProcessTree;
+const GlimmerTemplatePrecompiler = utils.GlimmerTemplatePrecompiler;
 
-import { AbstractBuild, addonProcessTree } from 'ember-build-utilities';
 import RollupWithDependencies from './rollup-with-dependencies';
-import GlimmerTemplatePrecompiler from './glimmer-template-precompiler';
 import defaultModuleConfiguration from './default-module-configuration';
 
 //const Logger = require('heimdalljs-logger');
@@ -32,6 +31,16 @@ import defaultModuleConfiguration from './default-module-configuration';
 
 
 import { TypeScript } from 'broccoli-typescript-compiler/lib/plugin';
+
+export interface AbstractBuild {
+  _notifyAddonIncluded(): void;
+  typescriptTree(tree: Tree, tsConfig: {}): Tree;
+  esLatestTree(tree: Tree): Tree;
+  esTree(tree: Tree): Tree;
+  package(jsTree: Tree, cssTree: Tree, publicTree: Tree, htmlTree: Tree): Tree;
+}
+
+export const AbstractBuild: { new(defaults: EmberCLIDefaults, options: {}): AbstractBuild } = utils.AbstractBuild;
 
 function maybeDebug(inputTree: Tree, name: string) {
   if (!process.env.GLIMMER_BUILD_DEBUG) {
@@ -435,7 +444,7 @@ Please run the following to resolve this warning:
     }
   }
 
-  private htmlTree() {
+  public htmlTree() {
     let srcTree = this.trees.src;
 
     const htmlName = this.outputPaths.app.html;

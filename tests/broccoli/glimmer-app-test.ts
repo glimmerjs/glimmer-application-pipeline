@@ -19,11 +19,19 @@ const expect = require('../helpers/chai').expect;
 describe('glimmer-app', function() {
   let input: TempDir;
 
+  const ORIGINAL_EMBER_ENV = process.env.EMBER_ENV;
+
   beforeEach(function() {
     return createTempDir().then(tempDir => (input = tempDir));
   });
 
   afterEach(function() {
+    if (ORIGINAL_EMBER_ENV) {
+      process.env.EMBER_ENV = ORIGINAL_EMBER_ENV;
+    } else {
+      delete process.env.EMBER_ENV;
+    }
+
     return input.dispose();
   });
 
@@ -56,18 +64,8 @@ describe('glimmer-app', function() {
     });
 
     describe('env', function() {
-      const ORIGINAL_EMBER_ENV = process.env.EMBER_ENV;
-
       beforeEach(function() {
         delete process.env.EMBER_ENV;
-      });
-
-      afterEach(function() {
-        if (ORIGINAL_EMBER_ENV) {
-          process.env.EMBER_ENV = ORIGINAL_EMBER_ENV;
-        } else {
-          delete process.env.EMBER_ENV;
-        }
       });
 
       it('sets an `env`', function() {
@@ -421,6 +419,86 @@ describe('glimmer-app', function() {
 
       expect(actual['index.html']).to.equal('src');
       expect(actual['app.js']).to.include('Hello!');
+    });
+
+    describe('babel-plugin-debug-macros', function() {
+      it('replaces @glimmer/env imports', async function() {
+        input.write({
+          'src': {
+            'index.ts': 'import { DEBUG } from "@glimmer/env"; console.log(DEBUG);',
+            'ui': {
+              'index.html': 'src'
+            }
+          },
+          'config': {},
+          'tsconfig.json': tsconfigContents
+        });
+
+        let app = createApp({
+          trees: {
+            nodeModules: path.join(__dirname, '..', '..', '..', 'node_modules')
+          }
+        });
+        let output = await buildOutput(app.toTree());
+        let actual = output.read();
+
+        expect(actual['index.html']).to.equal('src');
+        expect(actual['app.js']).to.include('console.log(true)');
+      });
+
+      it('rewrites @glimmer/debug imports', async function() {
+        input.write({
+          'src': {
+            'index.ts': 'import { assert } from "@glimmer/debug"; assert(true, "some message for debug");',
+            'ui': {
+              'index.html': 'src'
+            }
+          },
+          'config': {},
+          'tsconfig.json': tsconfigContents
+        });
+
+        let app = createApp({
+          trees: {
+            nodeModules: path.join(__dirname, '..', '..', '..', 'node_modules')
+          }
+        });
+        let output = await buildOutput(app.toTree());
+        let actual = output.read();
+
+        expect(actual['index.html']).to.equal('src');
+        expect(actual['app.js']).to.include('true && console.assert(true');
+      });
+
+      it('removes @glimmer/debug imports in production builds', async function() {
+        process.env.EMBER_ENV = 'production';
+
+        input.write({
+          'src': {
+            'index.ts': 'import { assert } from "@glimmer/debug"; assert(true, "some message for debug");',
+            'ui': {
+              'index.html': 'src'
+            }
+          },
+          'config': {},
+          'tsconfig.json': tsconfigContents
+        });
+
+        let app = createApp({
+          trees: {
+            nodeModules: path.join(__dirname, '..', '..', '..', 'node_modules')
+          }
+        });
+        let output = await buildOutput(app.toTree());
+        let actual = output.read();
+
+        expect(actual['index.html']).to.equal('src');
+
+        let outputFiles = Object.keys(actual);
+        let appFile = outputFiles.find(fileName => fileName.startsWith('app-'));
+
+        expect(actual[appFile]).not.to.include('assert');
+      });
     });
 
     it('builds a module map', async function() {

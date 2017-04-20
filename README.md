@@ -34,6 +34,31 @@ module.exports = function(defaults) {
 };
 ```
 
+### Importing CommonJS modules
+
+The application pipeline only supports ES modules out of the box, but consumers can opt-in to using CommonJS modules themselves.
+Here is an example of what this looks like:
+
+```javascript
+// ember-cli-build.js
+const GlimmerApp = require('@glimmer/application-pipeline').GlimmerApp;
+const resolve = require('rollup-plugin-node-resolve');
+const commonjs = require('rollup-plugin-commonjs');
+
+module.exports = function(defaults) {
+  let app = new GlimmerApp(defaults, {
+    rollup: {
+      plugins: [
+        resolve({ jsnext: true, module: true, main: true }),
+        commonjs()
+      ]
+    }
+  });
+
+  return app.toTree();
+};
+```
+
 ## Development
 
 For the development of this project, Yarn is preferred over npm. However, any Yarn command can be replaced by the npm equivalent.

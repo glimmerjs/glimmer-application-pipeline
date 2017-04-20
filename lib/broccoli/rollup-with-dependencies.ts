@@ -2,6 +2,8 @@ const nodeResolve = require('rollup-plugin-node-resolve');
 const babel = require('rollup-plugin-babel');
 const fs = require('fs');
 
+import DebugMacros from 'babel-plugin-debug-macros';
+
 function hasPlugin(plugins, name) {
   return plugins.some(plugin => plugin.name === name);
 }
@@ -21,6 +23,7 @@ class RollupWithDependencies extends Rollup {
   build(...args) {
     let plugins = this.rollupOptions.plugins || [];
     let sourceMapsEnabled = !!this.rollupOptions.sourceMap;
+    let isProduction = process.env.EMBER_ENV === 'production';
 
     if (sourceMapsEnabled) {
       plugins.push(loadWithInlineMap());
@@ -35,7 +38,17 @@ class RollupWithDependencies extends Rollup {
           ]
         ],
         plugins: [
-          'external-helpers'
+          'external-helpers',
+          [DebugMacros, {
+            envFlags: {
+              source: '@glimmer/env',
+              flags: { DEBUG: !isProduction, PROD: isProduction, CI: !!process.env.CI }
+            },
+
+            debugTools: {
+              source: '@glimmer/debug'
+            }
+          }]
         ],
         sourceMaps: sourceMapsEnabled && 'inline',
         retainLines: false

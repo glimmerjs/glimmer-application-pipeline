@@ -59,6 +59,36 @@ module.exports = function(defaults) {
 };
 ```
 
+### Customizing production and debug builds
+
+This enables any dependencies that are being built to do the following:
+
+```js
+import { DEBUG } from '@glimmer/env';
+
+if (DEBUG) {
+  // do things that are supposed to be done in debug builds only
+}
+```
+
+A good example of this, is to only install "mandatory setters" for `@tracked` when running in debug builds. In production we do not want to `Object.defineProperty(instance, propertyName, ...)` for **every** property that is used in a template, but we do want this in debug builds so that we can provide nice helpful messaging to the user about what they have potentially done wrong.
+
+This PR also enables automatic `warn` / `assert` stripping via:
+
+```js
+import { assert } from '@glimmer/debug';
+
+assert(somePredicateGoesHere, 'helpful message when the predicate is not true');
+```
+
+In debug build this is transpiled to something like:
+
+```js
+somePredicateGoesHere && console.assert(somePredicateGoesHere, 'helpful message when the predicate is not true');
+```
+
+But in production builds, the entire statement is removed.
+
 ## Development
 
 For the development of this project, Yarn is preferred over npm. However, any Yarn command can be replaced by the npm equivalent.

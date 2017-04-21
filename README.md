@@ -3,7 +3,7 @@
 [![npm version](https://badge.fury.io/js/%40glimmer%2Fapplication-pipeline.svg)](https://badge.fury.io/js/%40glimmer%2Fapplication-pipeline)
 [![Build Status](https://secure.travis-ci.org/glimmerjs/glimmer-application-pipeline.svg?branch=master)](http://travis-ci.org/glimmerjs/glimmer-application-pipeline)
 
-## Instalation
+## Installation
 
 Add this package to your project with Yarn:
 

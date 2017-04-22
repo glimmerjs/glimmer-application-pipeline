@@ -270,7 +270,9 @@ describe('glimmer-app', function() {
       input.write({
         'app': {},
         'src': {
+          'index.ts': '',
           'ui': {
+            'index.html': '',
             'styles': {
               'app.scss': stripIndent`
                 $font-stack: Helvetica, sans-serif;
@@ -284,40 +286,26 @@ describe('glimmer-app', function() {
         'config': {},
       });
 
-      let app = createApp() as any;
-      let output = await buildOutput(app.cssTree());
+      let app = createApp({
+        trees: {
+          nodeModules: path.join(__dirname, '..', '..', '..', 'node_modules')
+        }
+      }) as any;
+      let output = await buildOutput(app.toTree());
+      let actual = output.read();
 
-      expect(output.read()).to.deep.equal({
-        'app.css': `body {\n  font: 100% Helvetica, sans-serif;\n  color: #333; }\n`,
-      });
+      expect(actual['app.css']).to.equal(
+        `body {\n  font: 100% Helvetica, sans-serif;\n  color: #333; }\n`
+      );
     });
 
     it('passes through css', async function () {
       input.write({
         'app': {},
         'src': {
+          'index.ts': '',
           'ui': {
-            'styles': {
-              'app.css': `body { color: #333; }`
-            },
-          }
-        },
-        'config': {},
-      });
-
-      let app = createApp() as any;
-      let output = await buildOutput(app.cssTree());
-
-      expect(output.read()).to.deep.equal({
-        'app.css': `body { color: #333; }`
-      });
-    });
-
-    it('respects outputPaths.app.css with plain css', async function () {
-      input.write({
-        'app': {},
-        'src': {
-          'ui': {
+            'index.html': '',
             'styles': {
               'app.css': `body { color: #333; }`
             },
@@ -327,24 +315,54 @@ describe('glimmer-app', function() {
       });
 
       let app = createApp({
+        trees: {
+          nodeModules: path.join(__dirname, '..', '..', '..', 'node_modules')
+        }
+      }) as any;
+      let output = await buildOutput(app.toTree());
+      let actual = output.read();
+
+      expect(actual['app.css']).to.equal(`body { color: #333; }`);
+    });
+
+    it('respects outputPaths.app.css with plain css', async function () {
+      input.write({
+        'app': {},
+        'src': {
+          'index.ts': '',
+          'ui': {
+            'index.html': '',
+            'styles': {
+              'app.css': `body { color: #333; }`
+            },
+          }
+        },
+        'config': {},
+      });
+
+      let app = createApp({
+        trees: {
+          nodeModules: path.join(__dirname, '..', '..', '..', 'node_modules')
+        },
         outputPaths: {
           app: {
             css: 'foo-bar.css'
           }
         }
       }) as any;
-      let output = await buildOutput(app.cssTree());
+      let output = await buildOutput(app.toTree());
+      let actual = output.read();
 
-      expect(output.read()).to.deep.equal({
-        'foo-bar.css': `body { color: #333; }`
-      });
+      expect(actual['foo-bar.css']).to.equal(`body { color: #333; }`);
     });
 
     it('respects outputPaths.app.css with sass', async function () {
       input.write({
         'app': {},
         'src': {
+          'index.ts': '',
           'ui': {
+            'index.html': '',
             'styles': {
               'app.scss': stripIndent`
                 $font-stack: Helvetica, sans-serif;
@@ -359,17 +377,21 @@ describe('glimmer-app', function() {
       });
 
       let app = createApp({
+        trees: {
+          nodeModules: path.join(__dirname, '..', '..', '..', 'node_modules')
+        },
         outputPaths: {
           app: {
             css: 'foo-bar.css'
           }
         }
       }) as any;
-      let output = await buildOutput(app.cssTree());
+      let output = await buildOutput(app.toTree());
+      let actual = output.read();
 
-      expect(output.read()).to.deep.equal({
-        'foo-bar.css': `body {\n  font: 100% Helvetica, sans-serif;\n  color: #333; }\n`,
-      });
+      expect(actual['foo-bar.css']).to.equal(
+        `body {\n  font: 100% Helvetica, sans-serif;\n  color: #333; }\n`
+      );
     });
   });
 

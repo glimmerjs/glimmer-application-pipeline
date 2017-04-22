@@ -2,15 +2,11 @@
 const ConfigLoader = require('broccoli-config-loader');
 const ConfigReplace = require('broccoli-config-replace');
 const Funnel = require('broccoli-funnel');
-const concat = require('broccoli-concat');
 const path  = require('path');
 const fs = require('fs');
 const typescript = require('broccoli-typescript-compiler').typescript;
 const existsSync = require('exists-sync');
 const MergeTrees = require('broccoli-merge-trees');
-const compileSass = require('broccoli-sass');
-const assetRev = require('broccoli-asset-rev');
-const uglify = require('broccoli-uglify-sourcemap');
 const ResolutionMapBuilder = require('@glimmer/resolution-map-builder');
 const ResolverConfigurationBuilder = require('@glimmer/resolver-configuration-builder');
 const BroccoliSource = require('broccoli-source');
@@ -26,6 +22,7 @@ const resolveLocal = utils.resolveLocal;
 const setupRegistry = p.setupRegistry;
 const defaultRegistry = p.defaultRegistry;
 const preprocessJs = p.preprocessJs;
+const preprocessCss = p.preprocessCss;
 
 import RollupWithDependencies from './rollup-with-dependencies';
 import defaultModuleConfiguration from './default-module-configuration';
@@ -329,6 +326,7 @@ export default class GlimmerApp extends AbstractBuild {
 
     let appTree = new MergeTrees(trees);
 
+    appTree = this.maybePerformDeprecatedSass(appTree, missingPackages);
     appTree = this.maybePerformDeprecatedUglify(appTree, missingPackages);
     appTree = this.maybePerformDeprecatedAssetRev(appTree, missingPackages);
 
@@ -427,27 +425,19 @@ Please run the following to resolve this warning:
   }
 
   private cssTree() {
-    // should really make SASS support to be opt-in, so that
-    // we can properly honor the `GlimmerAppOptions.trees.src`
-    // abstraction here, but for now we still require `src` to be a
-    // "real" path on disk that we check
     let stylesPath = path.join(resolveLocal(this.project.root, 'src'), 'ui', 'styles');
 
     if (fs.existsSync(stylesPath)) {
-      // Compile SASS if app.scss is present
-      // (this works with imports from app.scss)
-      let scssPath = path.join(stylesPath, 'app.scss');
-      if (fs.existsSync(scssPath)) {
-        return compileSass([stylesPath], 'app.scss', this.outputPaths.app.css, {
-          annotation: 'Funnel: scss'
-        });
-      }
+      let cssTree = addonProcessTree(this.project, 'preprocessTree', 'css',
+        new Funnel(stylesPath, {
+          destDir: '/src/ui/styles',
+          include: ['**/*.css', '**/*.scss'],
+          annotation: 'Funnel: css'}));
 
-      // Otherwise concat all the css in the styles dir
-      return concat(new Funnel(stylesPath, {
-        include: ['**/*.css'],
-        annotation: 'Funnel: css'}),
-        { outputFile: this.outputPaths.app.css });
+      return preprocessCss(cssTree, '/src/ui/styles', '/assets', {
+        outputPaths: { 'app': this.outputPaths.app.css },
+        registry: this.registry
+      });
     }
   }
 
@@ -547,6 +537,29 @@ Please run the following to resolve this warning:
     return this._cachedConfigTree;
   }
 
+  private maybePerformDeprecatedSass(appTree, missingPackagesForDeprecationMessage) {
+    let stylesPath = path.join(resolveLocal(this.project.root, 'src'), 'ui', 'styles');
+
+    if (fs.existsSync(stylesPath)) {
+      let scssPath = path.join(stylesPath, 'app.scss');
+
+      if (fs.existsSync(scssPath) && !this.project.findAddonByName('ember-cli-sass')) {
+        missingPackagesForDeprecationMessage.push('ember install ember-cli-sass');
+
+        const compileSass = require('broccoli-sass');
+
+        let scssTree = compileSass([stylesPath], 'app.scss', this.outputPaths.app.css, {
+          annotation: 'Funnel: scss'
+        });
+
+        appTree = new Funnel(appTree, { exclude: ['**/*.scss'] });
+        appTree = new MergeTrees([ appTree, scssTree ]);
+      }
+    }
+
+    return appTree;
+  }
+
   private maybePerformDeprecatedUglify(appTree, missingPackagesForDeprecationMessage) {
     let isProduction = process.env.EMBER_ENV === 'production';
 
@@ -554,6 +567,8 @@ Please run the following to resolve this warning:
     // process it with a warning/deprecation
     if (isProduction && !this.project.findAddonByName('broccoli-asset-rev')) {
       missingPackagesForDeprecationMessage.push('ember install ember-cli-uglify');
+
+      const uglify = require('broccoli-uglify-sourcemap');
 
       appTree = uglify(appTree, {
         compress: {
@@ -579,6 +594,8 @@ Please run the following to resolve this warning:
       // Fingerprint assets for cache busting in production.
       let extensions = ['js', 'css'];
       let replaceExtensions = ['html', 'js', 'css'];
+
+      const assetRev = require('broccoli-asset-rev');
 
       appTree = assetRev(appTree, {
         extensions,

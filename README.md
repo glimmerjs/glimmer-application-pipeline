@@ -59,6 +59,18 @@ module.exports = function(defaults) {
 };
 ```
 
+Note that Rollup must be [configured](https://github.com/rollup/rollup/wiki/JavaScript-API) when an NPM module rely on global variables. For example, if [`crypto`](https://developer.mozilla.org/en-US/docs/Web/API/Window/crypto) is being used by one of the modules that is `import`ed into the the app, the additional options to the above for the Rollup config is the following:
+
+```js
+rollup: {
+  // ...
+  external: ['crypto'],
+  globals: {
+    crypto: 'crypto'
+  }
+}
+```
+
 ## Development
 
 For the development of this project, Yarn is preferred over npm. However, any Yarn command can be replaced by the npm equivalent.

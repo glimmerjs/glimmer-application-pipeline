@@ -616,5 +616,47 @@ describe('glimmer-app', function() {
 
       expect(actual['app.js']).to.include('NOW YOU DON\'T');
     });
+
+    describe('`getGlimmerEnvironment`', () => {
+      it('returns application options from `config/environment.js` if it is specified via `GlimmerENV`', () => {
+        input.write({
+          'app': {},
+          'src': {
+            'ui': {
+              'index.html': 'src',
+            },
+          },
+          'config': {
+            'environment.js': `
+            module.exports = function() {
+              return { GlimmerENV: { FEATURES: {} } };
+            };`
+          },
+        });
+        let app = createApp();
+
+        expect(app.getGlimmerEnvironment()).to.deep.equal({ FEATURES: {} });
+      });
+
+      it('returns application options from `config/environment.js` if it is specified via `EmberENV`', () => {
+        input.write({
+          'app': {},
+          'src': {
+            'ui': {
+              'index.html': 'src',
+            },
+          },
+          'config': {
+            'environment.js': `
+            module.exports = function() {
+              return { EmberENV: { FEATURES: {} } };
+            };`
+          },
+        });
+        let app = createApp();
+
+        expect(app.getGlimmerEnvironment()).to.deep.equal({ FEATURES: {} });
+      });
+    });
   });
 });

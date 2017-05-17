@@ -123,7 +123,9 @@ export interface Addon {
 export interface Project {
   root: string;
   name(): string;
+  env: string;
   configPath(): string;
+  config(env: string): any;
   addons: Addon[];
 
   findAddonByName(name: string): Addon | null;
@@ -285,13 +287,14 @@ export default class GlimmerApp extends AbstractBuild {
   private javascript() {
     let { src, nodeModules } = this.trees;
     let tsConfig = this.tsOptions();
+    let glimmerEnv = this.getGlimmerEnvironment();
     let configTree = this.buildConfigTree(src);
     let srcWithoutHBSTree = new Funnel(src, {
       exclude: ['**/*.hbs', '**/*.ts']
     });
 
     // Compile the TypeScript and Handlebars files into JavaScript
-    let compiledHandlebarsTree = this.compiledHandlebarsTree(src);
+    let compiledHandlebarsTree = this.compiledHandlebarsTree(src, glimmerEnv);
     let combinedConfigAndCompiledHandlebarsTree = new MergeTrees([configTree, compiledHandlebarsTree]);
 
     // the output tree from typescript only includes the output from .ts -> .js transpilation
@@ -342,6 +345,12 @@ Please run the following to resolve this warning:
     return appTree;
   }
 
+  public getGlimmerEnvironment(): any {
+    let config = this.project.config(this.project.env);
+
+    return config.GlimmerENV || config.EmberENV;
+  }
+
   /**
    * Creates a Broccoli tree representing the compiled Glimmer application.
    *
@@ -364,9 +373,10 @@ Please run the following to resolve this warning:
     return maybeDebug(compiledTypeScriptTree, 'typescript-output');
   }
 
-  private compiledHandlebarsTree(srcTree) {
+  private compiledHandlebarsTree(srcTree, glimmerEnv) {
     let compiledHandlebarsTree = new GlimmerTemplatePrecompiler(srcTree, {
-      rootName: this.project.pkg.name
+      rootName: this.project.pkg.name,
+      GlimmerENV: glimmerEnv
     });
 
     return maybeDebug(compiledHandlebarsTree, 'handlebars-output');

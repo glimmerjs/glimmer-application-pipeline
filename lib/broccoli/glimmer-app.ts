@@ -428,16 +428,13 @@ Please run the following to resolve this warning:
     let stylesPath = path.join(resolveLocal(this.project.root, 'src'), 'ui', 'styles');
 
     if (fs.existsSync(stylesPath)) {
-      let cssTree = addonProcessTree(this.project, 'preprocessTree', 'css',
-        new Funnel(stylesPath, {
-          destDir: '/src/ui/styles',
-          include: ['**/*.css', '**/*.scss'],
-          annotation: 'Funnel: css'}));
-
-      return preprocessCss(cssTree, '/src/ui/styles', '/assets', {
+      let cssTree = new Funnel(stylesPath, { destDir: '/src/ui/styles' });
+      let compiledCssTree = preprocessCss(cssTree, '/src/ui/styles', '/assets', {
         outputPaths: { 'app': this.outputPaths.app.css },
         registry: this.registry
       });
+
+      return addonProcessTree(this.project, 'preprocessTree', 'css', compiledCssTree);
     }
   }
 

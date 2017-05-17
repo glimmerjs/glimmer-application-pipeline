@@ -27,8 +27,6 @@
     "ember-addon"
   ],
   "dependencies": {
-    "@glimmer/compiler": "^0.23.0-alpha.11",
-    "@glimmer/di": "^0.2.0",
     "@glimmer/resolution-map-builder": "^0.3.8",
     "@glimmer/resolver-configuration-builder": "^0.1.2",
     "babel-plugin-debug-macros": "^0.1.7",
@@ -57,10 +55,7 @@
     "ember-cli-string-utils": "^1.1.0",
     "ember-cli-valid-component-name": "^1.0.0",
     "exists-sync": "^0.0.4",
-    "handlebars": "^4.0.8",
     "heimdalljs-logger": "^0.1.9",
-    "lodash.defaultsdeep": "^4.6.0",
-    "rimraf": "^2.5.4",
     "rollup": "^0.41.6",
     "rollup-plugin-babel": "^2.7.1",
     "rollup-plugin-node-resolve": "^2.0.0",

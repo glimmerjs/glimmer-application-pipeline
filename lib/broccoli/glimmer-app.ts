@@ -572,7 +572,7 @@ Please run the following to resolve this warning:
     if (fs.existsSync(stylesPath)) {
       const glob = require('glob');
 
-      if (glob.sync(path.join(stylesPath, '/**/*.css')).length) {
+      if (glob.sync(path.join(stylesPath, '/**/*.css')).length > 1) {
         const concat = require('broccoli-concat');
 
         this.project.ui.writeWarnLine(

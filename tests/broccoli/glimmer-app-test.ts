@@ -247,12 +247,43 @@ describe('glimmer-app', function() {
   });
 
   describe('cssTree', function() {
-    it('allows passing custom `src` tree');
+    it('allows passing custom `styles` tree', async function () {
+      input.write({
+        'app': {},
+        'derp': {
+          'ui': {
+            'styles': {
+              'app.css': 'derp'
+            }
+          }
+        },
+        'src': {
+          'index.ts': '',
+          'ui': {
+            'index.html': 'src'
+          },
+        },
+        'config': {},
+      });
 
-    it('returns null when no styles are present', async function () {
+      let app = createApp({
+        trees: {
+          styles: 'derp/ui/styles',
+          nodeModules: path.join(__dirname, '..', '..', '..', 'node_modules')
+        }
+      }) as any;
+
+      let output = await buildOutput(app.toTree());
+      let actual = output.read();
+
+      expect(actual['app.css']).to.equal('derp');
+    });
+
+    it('does not generate app.css without styles', async function () {
       input.write({
         'app': {},
         'src': {
+          'index.ts': '',
           'ui': {
             'index.html': 'src',
           },
@@ -260,10 +291,15 @@ describe('glimmer-app', function() {
         'config': {},
       });
 
-      let app = createApp() as any;
-      let output = app.cssTree();
+      let app = createApp({
+        trees: {
+          nodeModules: path.join(__dirname, '..', '..', '..', 'node_modules')
+        }
+      }) as any;
+      let output = await buildOutput(app.toTree());
+      let actual = output.read();
 
-      expect(output).to.be.undefined;
+      expect(actual['app.css']).to.be.undefined;
     });
 
     it('compiles sass', async function () {

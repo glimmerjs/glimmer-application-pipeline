@@ -252,7 +252,14 @@ export default class GlimmerApp extends AbstractBuild {
       srcTree = addonProcessTree(this.project, 'preprocessTree', 'src', srcTree);
     }
 
-    let stylesTree = options.trees && options.trees.styles || path.join(resolveLocal(this.project.root, 'src'), 'ui', 'styles');
+    let stylesTree = options.trees && options.trees.styles;
+
+    if (typeof stylesTree === 'string') {
+      stylesTree = resolveLocal(root, stylesTree);
+    } else if (!stylesTree) {
+      let stylesSrc = path.join(resolveLocal(root, 'src'), 'ui', 'styles');
+      stylesTree = existsSync(stylesSrc) ? stylesSrc : null;
+    }
 
     if (stylesTree) {
       stylesTree = new Funnel(stylesTree, { destDir: '/src/ui/styles' });

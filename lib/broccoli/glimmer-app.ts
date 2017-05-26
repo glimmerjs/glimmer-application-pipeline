@@ -105,6 +105,7 @@ export interface GlimmerAppOptions {
   }
   trees?: {
     src?: Tree | string;
+    styles?: Tree | string;
     nodeModules?: Tree | string;
   }
   registry?: Registry;
@@ -139,6 +140,7 @@ export interface Project {
 
 export interface Trees {
   src: Tree;
+  styles: Tree;
   nodeModules: Tree;
 }
 
@@ -250,6 +252,12 @@ export default class GlimmerApp extends AbstractBuild {
       srcTree = addonProcessTree(this.project, 'preprocessTree', 'src', srcTree);
     }
 
+    let stylesTree = options.trees && options.trees.styles || path.join(resolveLocal(this.project.root, 'src'), 'ui', 'styles');
+
+    if (stylesTree) {
+      stylesTree = new Funnel(stylesTree, { destDir: '/src/ui/styles' });
+    }
+
     let nodeModulesTree = options.trees && options.trees.nodeModules || new UnwatchedDir(resolveLocal(root, 'node_modules'));
 
     if (nodeModulesTree) {
@@ -260,6 +268,7 @@ export default class GlimmerApp extends AbstractBuild {
 
     return {
       src: maybeDebug(srcTree, 'src'),
+      styles: maybeDebug(stylesTree, 'styles'),
       nodeModules: nodeModulesTree
     }
   }
@@ -424,12 +433,11 @@ Please run the following to resolve this warning:
     });
   }
 
-  private cssTree() {
-    let stylesPath = path.join(resolveLocal(this.project.root, 'src'), 'ui', 'styles');
+  private cssTree(): Tree {
+    let { styles } = this.trees;
 
-    if (fs.existsSync(stylesPath)) {
-      let cssTree = new Funnel(stylesPath, { destDir: '/src/ui/styles' });
-      let compiledCssTree = preprocessCss(cssTree, '/src/ui/styles', '/assets', {
+    if (styles) {
+      let compiledCssTree = preprocessCss(styles, '/src/ui/styles', '/assets', {
         outputPaths: { 'app': this.outputPaths.app.css },
         registry: this.registry
       });

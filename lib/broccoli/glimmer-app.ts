@@ -336,6 +336,7 @@ export default class GlimmerApp extends AbstractBuild {
     let appTree = new MergeTrees(trees);
 
     appTree = this.maybePerformDeprecatedSass(appTree, missingPackages);
+    appTree = this.maybePerformDeprecatedCssConcat(appTree);
     appTree = this.maybePerformDeprecatedUglify(appTree, missingPackages);
     appTree = this.maybePerformDeprecatedAssetRev(appTree, missingPackages);
 
@@ -559,6 +560,34 @@ Please run the following to resolve this warning:
 
         appTree = new Funnel(appTree, { exclude: ['**/*.scss'] });
         appTree = new MergeTrees([ appTree, scssTree ]);
+      }
+    }
+
+    return appTree;
+  }
+
+  private maybePerformDeprecatedCssConcat(appTree) {
+    let stylesPath = path.join(resolveLocal(this.project.root, 'src'), 'ui', 'styles');
+
+    if (fs.existsSync(stylesPath)) {
+      const glob = require('glob');
+
+      if (glob.sync(path.join(stylesPath, '/**/*.css')).length) {
+        const concat = require('broccoli-concat');
+
+        this.project.ui.writeWarnLine(
+          'Detected multiple CSS files, automatic concatenation is deprecated ' +
+          'and will be removed in future versions of ' +
+          '@glimmer/application-pipeline.');
+
+        let cssTree = concat(new Funnel(stylesPath, {
+          include: ['**/*.css'],
+          annotation: 'Funnel: css'}),
+          { outputFile: this.outputPaths.app.css }
+        );
+
+        appTree = new Funnel(appTree, { exclude: ['**/*.css'] });
+        appTree = new MergeTrees([ appTree, cssTree ]);
       }
     }
 

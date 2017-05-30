@@ -23,6 +23,7 @@ const setupRegistry = p.setupRegistry;
 const defaultRegistry = p.defaultRegistry;
 const preprocessJs = p.preprocessJs;
 const preprocessCss = p.preprocessCss;
+const debugTree: (inputTree: Tree, name: string) => Tree = require('broccoli-debug').buildDebugCallback('glimmer-app');
 
 import RollupWithDependencies from './rollup-with-dependencies';
 import defaultModuleConfiguration from './default-module-configuration';
@@ -35,19 +36,17 @@ export interface AbstractBuild {
 
 export const AbstractBuild: { new(defaults: EmberCLIDefaults, options: {}): AbstractBuild } = utils.AbstractBuild;
 
-function maybeDebug(inputTree: Tree, name: string) {
+function maybeDebug(inputTree: Tree | null, name: string) {
   if (!process.env.GLIMMER_BUILD_DEBUG) {
     return inputTree;
   }
-
-  const debug = require('broccoli-stew').debug;
 
   // preserve `null` trees
   if (!inputTree) {
     return inputTree;
   }
 
-  return debug(inputTree, { name });
+  return debugTree(inputTree, name);
 }
 
 const DEFAULT_TS_OPTIONS = {

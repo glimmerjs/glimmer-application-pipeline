@@ -27,6 +27,7 @@ const debugTree: (inputTree: Tree, name: string) => Tree = require('broccoli-deb
 
 import RollupWithDependencies from './rollup-with-dependencies';
 import defaultModuleConfiguration from './default-module-configuration';
+import { Project, Addon, Tree, RollupOptions } from '../interfaces';
 
 
 export interface AbstractBuild {
@@ -36,7 +37,7 @@ export interface AbstractBuild {
 
 export const AbstractBuild: { new(defaults: EmberCLIDefaults, options: {}): AbstractBuild } = utils.AbstractBuild;
 
-function maybeDebug(inputTree: Tree | null, name: string) {
+function maybeDebug(inputTree: Tree | null, name: string): Tree | null {
   if (!process.env.GLIMMER_BUILD_DEBUG) {
     return inputTree;
   }
@@ -46,7 +47,7 @@ function maybeDebug(inputTree: Tree | null, name: string) {
     return inputTree;
   }
 
-  return debugTree(inputTree, name);
+  return debugTree(inputTree as Tree, name);
 }
 
 const DEFAULT_TS_OPTIONS = {
@@ -85,15 +86,6 @@ export interface EmberCLIDefaults {
   project: Project
 }
 
-// documented rollup options from
-// https://github.com/rollup/rollup/wiki/JavaScript-API#rolluprollup-options-
-export interface RollupOptions {
-  plugins?: any[],
-  treeshake?: boolean,
-  external?: string[] | ((id: string) => boolean);
-  paths?: { [importId: string]: string } | ((id: string) => string);
-}
-
 export interface GlimmerAppOptions {
   outputPaths?: {
     app?: {
@@ -111,40 +103,10 @@ export interface GlimmerAppOptions {
   rollup?: RollupOptions;
 }
 
-export interface Addon {
-  contentFor: (type: string, config, content: string[]) => string;
-  preprocessTree: (type: string, tree: Tree) => Tree;
-  included: (GlimmerApp) => void;
-}
-
-export interface Project {
-  root: string;
-  name(): string;
-  env: string;
-  configPath(): string;
-  config(env: string): any;
-  addons: Addon[];
-
-  findAddonByName(name: string): Addon | null;
-
-  pkg: {
-    name: string;
-  }
-
-  ui: {
-    writeLine(contents: string);
-    writeWarnLine(contents: string);
-  }
-}
-
 export interface Trees {
-  src: Tree;
-  styles: Tree;
-  nodeModules: Tree;
-}
-
-export interface Tree {
-
+  src: Tree | null;
+  styles: Tree | null;
+  nodeModules: Tree | null;
 }
 
 /**
@@ -233,12 +195,15 @@ export default class GlimmerApp extends AbstractBuild {
   }
 
   private buildTrees(options: GlimmerAppOptions): Trees {
-    let srcTree = options.trees && options.trees.src;
+    let srcTree: Tree | null;
+    let stylesTree: Tree | null;
+
+    let rawSrcTree = options.trees && options.trees.src;
     let { project: { root } } = this;
 
-    if (typeof srcTree === 'string') {
-      srcTree = new WatchedDir(resolveLocal(root, srcTree));
-    } else if (!srcTree) {
+    if (typeof rawSrcTree === 'string') {
+      srcTree = new WatchedDir(resolveLocal(root, rawSrcTree));
+    } else if (!rawSrcTree) {
       let srcPath = resolveLocal(root, 'src');
       srcTree = existsSync(srcPath) ? new WatchedDir(srcPath) : null;
     }
@@ -251,11 +216,11 @@ export default class GlimmerApp extends AbstractBuild {
       srcTree = addonProcessTree(this.project, 'preprocessTree', 'src', srcTree);
     }
 
-    let stylesTree = options.trees && options.trees.styles;
+    let rawStylesTree = options.trees && options.trees.styles;
 
-    if (typeof stylesTree === 'string') {
-      stylesTree = new WatchedDir(resolveLocal(root, stylesTree));
-    } else if (!stylesTree) {
+    if (typeof rawStylesTree === 'string') {
+      stylesTree = new WatchedDir(resolveLocal(root, rawStylesTree));
+    } else if (!rawStylesTree) {
       let stylesPath= resolveLocal(root, path.join('src', 'ui', 'styles'));
       stylesTree = existsSync(stylesPath) ? new WatchedDir(stylesPath) : null;
     }

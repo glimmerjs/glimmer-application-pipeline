@@ -1,6 +1,6 @@
 {
   "name": "@glimmer/application-pipeline",
-  "version": "0.6.11",
+  "version": "0.7.0",
   "description": "Tooling for developing Glimmer standalone apps with ember-cli",
   "contributors": [
     "Dan Gebhardt <dan@cerebris.com>",

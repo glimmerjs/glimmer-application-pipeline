@@ -254,10 +254,10 @@ export default class GlimmerApp extends AbstractBuild {
     let stylesTree = options.trees && options.trees.styles;
 
     if (typeof stylesTree === 'string') {
-      stylesTree = resolveLocal(root, stylesTree);
+      stylesTree = new WatchedDir(resolveLocal(root, stylesTree));
     } else if (!stylesTree) {
-      let stylesSrc = path.join(resolveLocal(root, 'src'), 'ui', 'styles');
-      stylesTree = existsSync(stylesSrc) ? stylesSrc : null;
+      let stylesPath= resolveLocal(root, path.join('src', 'ui', 'styles'));
+      stylesTree = existsSync(stylesPath) ? new WatchedDir(stylesPath) : null;
     }
 
     if (stylesTree) {

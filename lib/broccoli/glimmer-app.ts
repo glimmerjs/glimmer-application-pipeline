@@ -370,7 +370,8 @@ Please run the following to resolve this warning:
 
     return new RollupWithDependencies(maybeDebug(jsTree, 'rollup-input-tree'), {
       inputFiles: ['**/*.js'],
-      rollup: rollupOptions
+      rollup: rollupOptions,
+      project: this.project
     });
   }
 

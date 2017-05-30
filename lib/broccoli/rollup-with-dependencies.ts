@@ -23,7 +23,21 @@ export const Rollup: {
   new (inputNode: any, options?: {}): Rollup;
 } = require('broccoli-rollup');
 
+export interface RollupWithDependenciesOptions {
+  inputFiles: string[];
+  rollup?: RollupOptions;
+  project: Project;
+}
+
 class RollupWithDependencies extends Rollup {
+  private project: Project;
+
+  constructor(inputTree, options: RollupWithDependenciesOptions) {
+    super(inputTree, options);
+
+    this.project = options.project;
+  }
+
   rollupOptions: any;
   inputPaths: any[];
 

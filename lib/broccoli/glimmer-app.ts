@@ -444,12 +444,14 @@ Please run the following to resolve this warning:
     let { styles } = this.trees;
 
     if (styles) {
-      let compiledCssTree = preprocessCss(styles, '/src/ui/styles', '/assets', {
+      let preprocessedCssTree = addonProcessTree(this.project, 'preprocessTree', 'css', styles);
+
+      let compiledCssTree = preprocessCss(preprocessedCssTree, '/src/ui/styles', '/assets', {
         outputPaths: { 'app': this.outputPaths.app.css },
         registry: this.registry
       });
 
-      return addonProcessTree(this.project, 'preprocessTree', 'css', compiledCssTree);
+      return addonProcessTree(this.project, 'postprocessTree', 'css', compiledCssTree);
     }
   }
 

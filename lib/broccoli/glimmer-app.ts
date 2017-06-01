@@ -12,9 +12,7 @@ const ResolverConfigurationBuilder = require('@glimmer/resolver-configuration-bu
 const BroccoliSource = require('broccoli-source');
 const WatchedDir = BroccoliSource.WatchedDir;
 const UnwatchedDir = BroccoliSource.UnwatchedDir;
-const SilentError = require('silent-error');
 const p = require('ember-cli-preprocess-registry/preprocessors');
-const stripIndent = require('common-tags').stripIndent;
 const utils = require('ember-build-utilities');
 const addonProcessTree = utils.addonProcessTree;
 const GlimmerTemplatePrecompiler = utils.GlimmerTemplatePrecompiler;
@@ -175,7 +173,6 @@ export default class GlimmerApp extends AbstractBuild {
 
     this.trees = this.buildTrees(options);
     this.outputPaths = options.outputPaths as OutputPaths;
-    this.detectInvalidBlueprint(options);
 
     this['_notifyAddonIncluded']();
   }
@@ -535,35 +532,5 @@ Please run the following to resolve this warning:
     }
 
     return appTree;
-  }
-
-  private detectInvalidBlueprint(options) {
-    let srcPath = options.trees && options.trees.src || 'src';
-    let resolvedSrcPath;
-
-    if (typeof srcPath === 'string') {
-      resolvedSrcPath = resolveLocal(this.project.root, srcPath)
-    }
-
-    if (!resolvedSrcPath || !existsSync(resolvedSrcPath)) { return; } // cannot do detection
-    let mainPath = path.join(resolvedSrcPath, 'main.ts');
-
-    if (existsSync(mainPath)) {
-      let mainContents = fs.readFileSync(path.join(resolvedSrcPath, 'main.ts')).toString();
-
-      let hasModuleMapInSrc = mainContents.includes(`'./config/module-map`) || mainContents.includes(`"./config/module-map"`);
-      let hasResolverConfigInSrc = mainContents.includes(`'./config/resolver-configuration`) || mainContents.includes(`"./config/resolver-configuration`);
-
-      if (hasModuleMapInSrc || hasResolverConfigInSrc) {
-        throw new SilentError(stripIndent`
-          Updates to your project structure are required to run with this version of @glimmer/application-pipeline.
-
-          Please update your project by running:
-
-            yarn upgrade @glimmer/blueprint
-            ember init -b @glimmer/blueprint
-        `);
-      }
-    }
   }
 }

@@ -307,7 +307,6 @@ export default class GlimmerApp extends AbstractBuild {
     let appTree = new MergeTrees(trees);
 
     appTree = this.maybePerformDeprecatedSass(appTree, missingPackages);
-    appTree = this.maybePerformDeprecatedUglify(appTree, missingPackages);
     appTree = this.maybePerformDeprecatedAssetRev(appTree, missingPackages);
 
     if (missingPackages.length > 0) {
@@ -534,29 +533,6 @@ Please run the following to resolve this warning:
         appTree = new Funnel(appTree, { exclude: ['**/*.scss'] });
         appTree = new MergeTrees([ appTree, scssTree ]);
       }
-    }
-
-    return appTree;
-  }
-
-  private maybePerformDeprecatedUglify(appTree, missingPackagesForDeprecationMessage) {
-    let isProduction = process.env.EMBER_ENV === 'production';
-
-    // if the project does not have broccoli-asset-rev itself
-    // process it with a warning/deprecation
-    if (isProduction && !this.project.findAddonByName('broccoli-asset-rev')) {
-      missingPackagesForDeprecationMessage.push('ember install ember-cli-uglify');
-
-      const uglify = require('broccoli-uglify-sourcemap');
-
-      appTree = uglify(appTree, {
-        compress: {
-          screw_ie8: true,
-        },
-        sourceMapConfig: {
-          enabled: false
-        }
-      });
     }
 
     return appTree;

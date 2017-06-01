@@ -14,6 +14,7 @@ const WatchedDir = BroccoliSource.WatchedDir;
 const UnwatchedDir = BroccoliSource.UnwatchedDir;
 const p = require('ember-cli-preprocess-registry/preprocessors');
 const utils = require('ember-build-utilities');
+const defaultsDeep = require('lodash.defaultsdeep');
 const addonProcessTree = utils.addonProcessTree;
 const GlimmerTemplatePrecompiler = utils.GlimmerTemplatePrecompiler;
 const resolveLocal = utils.resolveLocal;
@@ -139,7 +140,7 @@ export default class GlimmerApp extends AbstractBuild {
 
     let isProduction = process.env.EMBER_ENV === 'production';
 
-    let defaults = Object.assign({}, upstreamDefaults, {
+    let defaults = defaultsDeep({}, {
       addons: {
         whitelist: null as string[] | null,
         blacklist: null as string[] | null,
@@ -154,11 +155,24 @@ export default class GlimmerApp extends AbstractBuild {
       rollup: { },
       minifyJS: {
         enabled: isProduction,
+
+        options: {
+          compress: {
+            // this is adversely affects heuristics for IIFE eval
+            negate_iife: false,
+            // limit sequences because of memory issues during parsing
+            sequences: 30
+          },
+          output: {
+            // no difference in size and much easier to debug
+            semicolons: false
+          }
+        }
       },
       sourcemaps: {
         enabled: !isProduction
       }
-    });
+    }, upstreamDefaults);
 
     super(defaults, options);
 

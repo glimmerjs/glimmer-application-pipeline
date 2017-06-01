@@ -307,7 +307,6 @@ export default class GlimmerApp extends AbstractBuild {
     let appTree = new MergeTrees(trees);
 
     appTree = this.maybePerformDeprecatedSass(appTree, missingPackages);
-    appTree = this.maybePerformDeprecatedAssetRev(appTree, missingPackages);
 
     if (missingPackages.length > 0) {
       this.project.ui.writeWarnLine(
@@ -533,29 +532,6 @@ Please run the following to resolve this warning:
         appTree = new Funnel(appTree, { exclude: ['**/*.scss'] });
         appTree = new MergeTrees([ appTree, scssTree ]);
       }
-    }
-
-    return appTree;
-  }
-
-  private maybePerformDeprecatedAssetRev(appTree, missingPackagesForDeprecationMessage) {
-    let isProduction = process.env.EMBER_ENV === 'production';
-
-    // if the project does not have broccoli-asset-rev itself
-    // process it with a warning/deprecation
-    if (isProduction && !this.project.findAddonByName('broccoli-asset-rev')) {
-      missingPackagesForDeprecationMessage.push('ember install broccoli-asset-rev');
-
-      // Fingerprint assets for cache busting in production.
-      let extensions = ['js', 'css'];
-      let replaceExtensions = ['html', 'js', 'css'];
-
-      const assetRev = require('broccoli-asset-rev');
-
-      appTree = assetRev(appTree, {
-        extensions,
-        replaceExtensions
-      });
     }
 
     return appTree;

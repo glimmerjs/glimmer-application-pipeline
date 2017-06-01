@@ -12,9 +12,7 @@ const ResolverConfigurationBuilder = require('@glimmer/resolver-configuration-bu
 const BroccoliSource = require('broccoli-source');
 const WatchedDir = BroccoliSource.WatchedDir;
 const UnwatchedDir = BroccoliSource.UnwatchedDir;
-const SilentError = require('silent-error');
 const p = require('ember-cli-preprocess-registry/preprocessors');
-const stripIndent = require('common-tags').stripIndent;
 const utils = require('ember-build-utilities');
 const addonProcessTree = utils.addonProcessTree;
 const GlimmerTemplatePrecompiler = utils.GlimmerTemplatePrecompiler;
@@ -175,7 +173,6 @@ export default class GlimmerApp extends AbstractBuild {
 
     this.trees = this.buildTrees(options);
     this.outputPaths = options.outputPaths as OutputPaths;
-    this.detectInvalidBlueprint(options);
 
     this['_notifyAddonIncluded']();
   }
@@ -307,8 +304,6 @@ export default class GlimmerApp extends AbstractBuild {
     let appTree = new MergeTrees(trees);
 
     appTree = this.maybePerformDeprecatedSass(appTree, missingPackages);
-    appTree = this.maybePerformDeprecatedUglify(appTree, missingPackages);
-    appTree = this.maybePerformDeprecatedAssetRev(appTree, missingPackages);
 
     if (missingPackages.length > 0) {
       this.project.ui.writeWarnLine(
@@ -537,81 +532,5 @@ Please run the following to resolve this warning:
     }
 
     return appTree;
-  }
-
-  private maybePerformDeprecatedUglify(appTree, missingPackagesForDeprecationMessage) {
-    let isProduction = process.env.EMBER_ENV === 'production';
-
-    // if the project does not have broccoli-asset-rev itself
-    // process it with a warning/deprecation
-    if (isProduction && !this.project.findAddonByName('broccoli-asset-rev')) {
-      missingPackagesForDeprecationMessage.push('ember install ember-cli-uglify');
-
-      const uglify = require('broccoli-uglify-sourcemap');
-
-      appTree = uglify(appTree, {
-        compress: {
-          screw_ie8: true,
-        },
-        sourceMapConfig: {
-          enabled: false
-        }
-      });
-    }
-
-    return appTree;
-  }
-
-  private maybePerformDeprecatedAssetRev(appTree, missingPackagesForDeprecationMessage) {
-    let isProduction = process.env.EMBER_ENV === 'production';
-
-    // if the project does not have broccoli-asset-rev itself
-    // process it with a warning/deprecation
-    if (isProduction && !this.project.findAddonByName('broccoli-asset-rev')) {
-      missingPackagesForDeprecationMessage.push('ember install broccoli-asset-rev');
-
-      // Fingerprint assets for cache busting in production.
-      let extensions = ['js', 'css'];
-      let replaceExtensions = ['html', 'js', 'css'];
-
-      const assetRev = require('broccoli-asset-rev');
-
-      appTree = assetRev(appTree, {
-        extensions,
-        replaceExtensions
-      });
-    }
-
-    return appTree;
-  }
-
-  private detectInvalidBlueprint(options) {
-    let srcPath = options.trees && options.trees.src || 'src';
-    let resolvedSrcPath;
-
-    if (typeof srcPath === 'string') {
-      resolvedSrcPath = resolveLocal(this.project.root, srcPath)
-    }
-
-    if (!resolvedSrcPath || !existsSync(resolvedSrcPath)) { return; } // cannot do detection
-    let mainPath = path.join(resolvedSrcPath, 'main.ts');
-
-    if (existsSync(mainPath)) {
-      let mainContents = fs.readFileSync(path.join(resolvedSrcPath, 'main.ts')).toString();
-
-      let hasModuleMapInSrc = mainContents.includes(`'./config/module-map`) || mainContents.includes(`"./config/module-map"`);
-      let hasResolverConfigInSrc = mainContents.includes(`'./config/resolver-configuration`) || mainContents.includes(`"./config/resolver-configuration`);
-
-      if (hasModuleMapInSrc || hasResolverConfigInSrc) {
-        throw new SilentError(stripIndent`
-          Updates to your project structure are required to run with this version of @glimmer/application-pipeline.
-
-          Please update your project by running:
-
-            yarn upgrade @glimmer/blueprint
-            ember init -b @glimmer/blueprint
-        `);
-      }
-    }
   }
 }

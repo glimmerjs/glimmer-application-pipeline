@@ -73,40 +73,17 @@ rollup: {
 
 ## Enabling use of async-await in components
 
-To get async/await to work, first you must create your project with the `--web-component option`, or add `@glimmer/web-component` to your package.json if your project has already been generated. 
-
-Next, install `regerator-runtime` and `rollup-plugin-commonjs` in your app:
+First, install `regerator-runtime` in your app:
 
 ```bash
 yarn add --dev regenerator-runtime
-yarn add --dev rollup-plugin-commonjs
 ```
 
-Import `regenerator-runtime` at the top of `src/index.ts`:
+Then import `regenerator-runtime/runtime` at the top of `src/index.ts`:
 
 ```javascript
 // src/index.ts
-import 'regenerator-runtime';
-```
-
-Enable commonJS modules in in ember-cli-build.js. Require `rollup-plugin-commonjs` and add `commonJS` to the rollup plugins:
-
-```javascript
-// ember-cli-build.js
-const GlimmerApp = require('@glimmer/application-pipeline').GlimmerApp;
-const commonjs = require('rollup-plugin-commonjs');
-
-module.exports = function(defaults) {
-  let app = new GlimmerApp(defaults, {
-    rollup: {
-      plugins: [
-        commonjs()
-      ]
-    }
-  });
-
-  return app.toTree();
-};
+import 'regenerator-runtime/runtime';
 ```
 
 ## Development

@@ -73,7 +73,7 @@ rollup: {
 
 ## Enabling use of async-await in components
 
-First, install `regerator-runtime` in your app:
+First, install `regenerator-runtime` in your app:
 
 ```bash
 yarn add --dev regenerator-runtime

@@ -550,7 +550,9 @@ describe('glimmer-app', function() {
           'ui': {
             'index.html': 'src',
             'components': {
-              'foo-bar.hbs': `<div>Hello!</div>`
+              'foo-bar': {
+                'template.hbs': `<div>Hello!</div>`
+              }
             },
           }
         },

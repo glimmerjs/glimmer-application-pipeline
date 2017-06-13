@@ -13,8 +13,8 @@
     "prepublish": "yarn run build",
     "postpublish": "git push origin master --tags",
     "pretest": "ember build",
-    "test": "yarn run problems && mocha dist/tests --recursive",
-    "test:debug": "ember build && mocha debug dist/tests --recursive",
+    "test": "yarn run problems && mocha dist/tests --recursive --timeout 5000",
+    "test:debug": "ember build && mocha debug dist/tests --recursive --timeout 5000",
     "start": "ember test --server",
     "problems": "tsc -p tsconfig.json --noEmit"
   },
@@ -27,7 +27,7 @@
     "ember-addon"
   ],
   "dependencies": {
-    "@glimmer/resolution-map-builder": "^0.3.8",
+    "@glimmer/resolution-map-builder": "^0.5.0",
     "@glimmer/resolver-configuration-builder": "^0.1.2",
     "babel-plugin-debug-macros": "^0.1.7",
     "babel-plugin-external-helpers": "^6.22.0",

@@ -4,7 +4,7 @@ module.exports = {
   launch_in_dev: ['Mocha'],
   launchers: {
     Mocha: {
-      command: "mocha dist/tests --recursive --reporter tap",
+      command: "mocha dist/tests --recursive --reporter tap --timeout 5000",
       protocol: 'tap'
     }
   }

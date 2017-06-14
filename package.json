@@ -27,7 +27,7 @@
     "ember-addon"
   ],
   "dependencies": {
-    "@glimmer/resolution-map-builder": "^0.3.8",
+    "@glimmer/resolution-map-builder": "^0.5.1",
     "@glimmer/resolver-configuration-builder": "^0.1.2",
     "babel-plugin-debug-macros": "^0.1.7",
     "babel-plugin-external-helpers": "^6.22.0",

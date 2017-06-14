@@ -378,7 +378,7 @@ Please run the following to resolve this warning:
 
   private buildResolutionMap(src) {
     return new ResolutionMapBuilder(src, this._configTree(), {
-      baseDir: 'src',
+      srcDir: 'src',
       configPath: this._configPath(),
       defaultModulePrefix: this.name,
       defaultModuleConfiguration

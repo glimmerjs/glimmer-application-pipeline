@@ -3,7 +3,7 @@
 [![npm version](https://badge.fury.io/js/%40glimmer%2Fapplication-pipeline.svg)](https://badge.fury.io/js/%40glimmer%2Fapplication-pipeline)
 [![Build Status](https://secure.travis-ci.org/glimmerjs/glimmer-application-pipeline.svg?branch=master)](http://travis-ci.org/glimmerjs/glimmer-application-pipeline)
 
-## Instalation
+## Installation
 
 Add this package to your project with Yarn:
 
@@ -59,6 +59,18 @@ module.exports = function(defaults) {
 };
 ```
 
+Note that Rollup must be [configured](https://github.com/rollup/rollup/wiki/JavaScript-API) when an NPM module rely on global variables. For example, if [`crypto`](https://developer.mozilla.org/en-US/docs/Web/API/Window/crypto) is being used by one of the modules that is `import`ed into the the app, the additional options to the above for the Rollup config is the following:
+
+```js
+rollup: {
+  // ...
+  external: ['crypto'],
+  globals: {
+    crypto: 'crypto'
+  }
+}
+```
+
 ### Customizing production and debug builds
 
 This enables any dependencies that are being built to do the following:
@@ -88,6 +100,21 @@ somePredicateGoesHere && console.assert(somePredicateGoesHere, 'helpful message 
 ```
 
 But in production builds, the entire statement is removed.
+
+## Enabling use of async-await in components
+
+First, install `regenerator-runtime` in your app:
+
+```bash
+yarn add --dev regenerator-runtime
+```
+
+Then import `regenerator-runtime/runtime` at the top of `src/index.ts`:
+
+```javascript
+// src/index.ts
+import 'regenerator-runtime/runtime';
+```
 
 ## Development
 

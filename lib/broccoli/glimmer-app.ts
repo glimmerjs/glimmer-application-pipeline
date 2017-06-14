@@ -2,33 +2,31 @@
 const ConfigLoader = require('broccoli-config-loader');
 const ConfigReplace = require('broccoli-config-replace');
 const Funnel = require('broccoli-funnel');
-const concat = require('broccoli-concat');
 const path  = require('path');
 const fs = require('fs');
 const typescript = require('broccoli-typescript-compiler').typescript;
 const existsSync = require('exists-sync');
 const MergeTrees = require('broccoli-merge-trees');
-const compileSass = require('broccoli-sass');
-const assetRev = require('broccoli-asset-rev');
-const uglify = require('broccoli-uglify-sourcemap');
 const ResolutionMapBuilder = require('@glimmer/resolution-map-builder');
 const ResolverConfigurationBuilder = require('@glimmer/resolver-configuration-builder');
 const BroccoliSource = require('broccoli-source');
 const WatchedDir = BroccoliSource.WatchedDir;
 const UnwatchedDir = BroccoliSource.UnwatchedDir;
-const SilentError = require('silent-error');
 const p = require('ember-cli-preprocess-registry/preprocessors');
-const stripIndent = require('common-tags').stripIndent;
 const utils = require('ember-build-utilities');
+const defaultsDeep = require('lodash.defaultsdeep');
 const addonProcessTree = utils.addonProcessTree;
 const GlimmerTemplatePrecompiler = utils.GlimmerTemplatePrecompiler;
 const resolveLocal = utils.resolveLocal;
 const setupRegistry = p.setupRegistry;
 const defaultRegistry = p.defaultRegistry;
 const preprocessJs = p.preprocessJs;
+const preprocessCss = p.preprocessCss;
+const debugTree: (inputTree: Tree, name: string) => Tree = require('broccoli-debug').buildDebugCallback('glimmer-app');
 
 import RollupWithDependencies from './rollup-with-dependencies';
 import defaultModuleConfiguration from './default-module-configuration';
+import { Project, Addon, Tree, RollupOptions } from '../interfaces';
 
 
 export interface AbstractBuild {
@@ -38,19 +36,17 @@ export interface AbstractBuild {
 
 export const AbstractBuild: { new(defaults: EmberCLIDefaults, options: {}): AbstractBuild } = utils.AbstractBuild;
 
-function maybeDebug(inputTree: Tree, name: string) {
+function maybeDebug(inputTree: Tree | null, name: string): Tree | null {
   if (!process.env.GLIMMER_BUILD_DEBUG) {
     return inputTree;
   }
-
-  const debug = require('broccoli-stew').debug;
 
   // preserve `null` trees
   if (!inputTree) {
     return inputTree;
   }
 
-  return debug(inputTree, { name });
+  return debugTree(inputTree as Tree, name);
 }
 
 const DEFAULT_TS_OPTIONS = {
@@ -89,15 +85,6 @@ export interface EmberCLIDefaults {
   project: Project
 }
 
-// documented rollup options from
-// https://github.com/rollup/rollup/wiki/JavaScript-API#rolluprollup-options-
-export interface RollupOptions {
-  plugins?: any[],
-  treeshake?: boolean,
-  external?: string[] | ((id: string) => boolean);
-  paths?: { [importId: string]: string } | ((id: string) => string);
-}
-
 export interface GlimmerAppOptions {
   outputPaths?: {
     app?: {
@@ -108,43 +95,17 @@ export interface GlimmerAppOptions {
   }
   trees?: {
     src?: Tree | string;
+    styles?: Tree | string;
     nodeModules?: Tree | string;
   }
   registry?: Registry;
   rollup?: RollupOptions;
 }
 
-export interface Addon {
-  contentFor: (type: string, config, content: string[]) => string;
-  preprocessTree: (type: string, tree: Tree) => Tree;
-  included: (GlimmerApp) => void;
-}
-
-export interface Project {
-  root: string;
-  name(): string;
-  configPath(): string;
-  addons: Addon[];
-
-  findAddonByName(name: string): Addon | null;
-
-  pkg: {
-    name: string;
-  }
-
-  ui: {
-    writeLine(contents: string);
-    writeWarnLine(contents: string);
-  }
-}
-
 export interface Trees {
-  src: Tree;
-  nodeModules: Tree;
-}
-
-export interface Tree {
-
+  src: Tree | null;
+  styles: Tree | null;
+  nodeModules: Tree | null;
 }
 
 /**
@@ -179,7 +140,7 @@ export default class GlimmerApp extends AbstractBuild {
 
     let isProduction = process.env.EMBER_ENV === 'production';
 
-    let defaults = Object.assign({}, upstreamDefaults, {
+    let defaults = defaultsDeep({}, {
       addons: {
         whitelist: null as string[] | null,
         blacklist: null as string[] | null,
@@ -194,11 +155,24 @@ export default class GlimmerApp extends AbstractBuild {
       rollup: { },
       minifyJS: {
         enabled: isProduction,
+
+        options: {
+          compress: {
+            // this is adversely affects heuristics for IIFE eval
+            negate_iife: false,
+            // limit sequences because of memory issues during parsing
+            sequences: 30
+          },
+          output: {
+            // no difference in size and much easier to debug
+            semicolons: false
+          }
+        }
       },
       sourcemaps: {
         enabled: !isProduction
       }
-    });
+    }, upstreamDefaults);
 
     super(defaults, options);
 
@@ -213,7 +187,6 @@ export default class GlimmerApp extends AbstractBuild {
 
     this.trees = this.buildTrees(options);
     this.outputPaths = options.outputPaths as OutputPaths;
-    this.detectInvalidBlueprint(options);
 
     this['_notifyAddonIncluded']();
   }
@@ -233,12 +206,15 @@ export default class GlimmerApp extends AbstractBuild {
   }
 
   private buildTrees(options: GlimmerAppOptions): Trees {
-    let srcTree = options.trees && options.trees.src;
+    let srcTree: Tree | null;
+    let stylesTree: Tree | null;
+
+    let rawSrcTree = options.trees && options.trees.src;
     let { project: { root } } = this;
 
-    if (typeof srcTree === 'string') {
-      srcTree = new WatchedDir(resolveLocal(root, srcTree));
-    } else if (!srcTree) {
+    if (typeof rawSrcTree === 'string') {
+      srcTree = new WatchedDir(resolveLocal(root, rawSrcTree));
+    } else if (!rawSrcTree) {
       let srcPath = resolveLocal(root, 'src');
       srcTree = existsSync(srcPath) ? new WatchedDir(srcPath) : null;
     }
@@ -251,6 +227,19 @@ export default class GlimmerApp extends AbstractBuild {
       srcTree = addonProcessTree(this.project, 'preprocessTree', 'src', srcTree);
     }
 
+    let rawStylesTree = options.trees && options.trees.styles;
+
+    if (typeof rawStylesTree === 'string') {
+      stylesTree = new WatchedDir(resolveLocal(root, rawStylesTree));
+    } else if (!rawStylesTree) {
+      let stylesPath= resolveLocal(root, path.join('src', 'ui', 'styles'));
+      stylesTree = existsSync(stylesPath) ? new WatchedDir(stylesPath) : null;
+    }
+
+    if (stylesTree) {
+      stylesTree = new Funnel(stylesTree, { destDir: '/src/ui/styles' });
+    }
+
     let nodeModulesTree = options.trees && options.trees.nodeModules || new UnwatchedDir(resolveLocal(root, 'node_modules'));
 
     if (nodeModulesTree) {
@@ -261,6 +250,7 @@ export default class GlimmerApp extends AbstractBuild {
 
     return {
       src: maybeDebug(srcTree, 'src'),
+      styles: maybeDebug(stylesTree, 'styles'),
       nodeModules: nodeModulesTree
     }
   }
@@ -285,13 +275,14 @@ export default class GlimmerApp extends AbstractBuild {
   private javascript() {
     let { src, nodeModules } = this.trees;
     let tsConfig = this.tsOptions();
+    let glimmerEnv = this.getGlimmerEnvironment();
     let configTree = this.buildConfigTree(src);
     let srcWithoutHBSTree = new Funnel(src, {
       exclude: ['**/*.hbs', '**/*.ts']
     });
 
     // Compile the TypeScript and Handlebars files into JavaScript
-    let compiledHandlebarsTree = this.compiledHandlebarsTree(src);
+    let compiledHandlebarsTree = this.compiledHandlebarsTree(src, glimmerEnv);
     let combinedConfigAndCompiledHandlebarsTree = new MergeTrees([configTree, compiledHandlebarsTree]);
 
     // the output tree from typescript only includes the output from .ts -> .js transpilation
@@ -326,8 +317,7 @@ export default class GlimmerApp extends AbstractBuild {
 
     let appTree = new MergeTrees(trees);
 
-    appTree = this.maybePerformDeprecatedUglify(appTree, missingPackages);
-    appTree = this.maybePerformDeprecatedAssetRev(appTree, missingPackages);
+    appTree = this.maybePerformDeprecatedSass(appTree, missingPackages);
 
     if (missingPackages.length > 0) {
       this.project.ui.writeWarnLine(
@@ -340,6 +330,12 @@ Please run the following to resolve this warning:
 
     appTree = addonProcessTree(this.project, 'postprocessTree', 'all', appTree);
     return appTree;
+  }
+
+  public getGlimmerEnvironment(): any {
+    let config = this.project.config(this.project.env);
+
+    return config.GlimmerENV || config.EmberENV;
   }
 
   /**
@@ -364,9 +360,10 @@ Please run the following to resolve this warning:
     return maybeDebug(compiledTypeScriptTree, 'typescript-output');
   }
 
-  private compiledHandlebarsTree(srcTree) {
+  private compiledHandlebarsTree(srcTree, glimmerEnv) {
     let compiledHandlebarsTree = new GlimmerTemplatePrecompiler(srcTree, {
-      rootName: this.project.pkg.name
+      rootName: this.project.pkg.name,
+      GlimmerENV: glimmerEnv
     });
 
     return maybeDebug(compiledHandlebarsTree, 'handlebars-output');
@@ -382,7 +379,8 @@ Please run the following to resolve this warning:
 
     return new RollupWithDependencies(maybeDebug(jsTree, 'rollup-input-tree'), {
       inputFiles: ['**/*.js'],
-      rollup: rollupOptions
+      rollup: rollupOptions,
+      project: this.project
     });
   }
 
@@ -416,28 +414,18 @@ Please run the following to resolve this warning:
     });
   }
 
-  private cssTree() {
-    // should really make SASS support to be opt-in, so that
-    // we can properly honor the `GlimmerAppOptions.trees.src`
-    // abstraction here, but for now we still require `src` to be a
-    // "real" path on disk that we check
-    let stylesPath = path.join(resolveLocal(this.project.root, 'src'), 'ui', 'styles');
+  private cssTree(): Tree {
+    let { styles } = this.trees;
 
-    if (fs.existsSync(stylesPath)) {
-      // Compile SASS if app.scss is present
-      // (this works with imports from app.scss)
-      let scssPath = path.join(stylesPath, 'app.scss');
-      if (fs.existsSync(scssPath)) {
-        return compileSass([stylesPath], 'app.scss', this.outputPaths.app.css, {
-          annotation: 'Funnel: scss'
-        });
-      }
+    if (styles) {
+      let preprocessedCssTree = addonProcessTree(this.project, 'preprocessTree', 'css', styles);
 
-      // Otherwise concat all the css in the styles dir
-      return concat(new Funnel(stylesPath, {
-        include: ['**/*.css'],
-        annotation: 'Funnel: css'}),
-        { outputFile: this.outputPaths.app.css });
+      let compiledCssTree = preprocessCss(preprocessedCssTree, '/src/ui/styles', '/assets', {
+        outputPaths: { 'app': this.outputPaths.app.css },
+        registry: this.registry
+      });
+
+      return addonProcessTree(this.project, 'postprocessTree', 'css', compiledCssTree);
     }
   }
 
@@ -537,75 +525,26 @@ Please run the following to resolve this warning:
     return this._cachedConfigTree;
   }
 
-  private maybePerformDeprecatedUglify(appTree, missingPackagesForDeprecationMessage) {
-    let isProduction = process.env.EMBER_ENV === 'production';
+  private maybePerformDeprecatedSass(appTree, missingPackagesForDeprecationMessage) {
+    let stylesPath = path.join(resolveLocal(this.project.root, 'src'), 'ui', 'styles');
 
-    // if the project does not have broccoli-asset-rev itself
-    // process it with a warning/deprecation
-    if (isProduction && !this.project.findAddonByName('broccoli-asset-rev')) {
-      missingPackagesForDeprecationMessage.push('ember install ember-cli-uglify');
+    if (fs.existsSync(stylesPath)) {
+      let scssPath = path.join(stylesPath, 'app.scss');
 
-      appTree = uglify(appTree, {
-        compress: {
-          screw_ie8: true,
-        },
-        sourceMapConfig: {
-          enabled: false
-        }
-      });
-    }
+      if (fs.existsSync(scssPath) && !this.project.findAddonByName('ember-cli-sass')) {
+        missingPackagesForDeprecationMessage.push('ember install ember-cli-sass');
 
-    return appTree;
-  }
+        const compileSass = require('broccoli-sass');
 
-  private maybePerformDeprecatedAssetRev(appTree, missingPackagesForDeprecationMessage) {
-    let isProduction = process.env.EMBER_ENV === 'production';
+        let scssTree = compileSass([stylesPath], 'app.scss', this.outputPaths.app.css, {
+          annotation: 'Funnel: scss'
+        });
 
-    // if the project does not have broccoli-asset-rev itself
-    // process it with a warning/deprecation
-    if (isProduction && !this.project.findAddonByName('broccoli-asset-rev')) {
-      missingPackagesForDeprecationMessage.push('ember install broccoli-asset-rev');
-
-      // Fingerprint assets for cache busting in production.
-      let extensions = ['js', 'css'];
-      let replaceExtensions = ['html', 'js', 'css'];
-
-      appTree = assetRev(appTree, {
-        extensions,
-        replaceExtensions
-      });
-    }
-
-    return appTree;
-  }
-
-  private detectInvalidBlueprint(options) {
-    let srcPath = options.trees && options.trees.src || 'src';
-    let resolvedSrcPath;
-
-    if (typeof srcPath === 'string') {
-      resolvedSrcPath = resolveLocal(this.project.root, srcPath)
-    }
-
-    if (!resolvedSrcPath || !existsSync(resolvedSrcPath)) { return; } // cannot do detection
-    let mainPath = path.join(resolvedSrcPath, 'main.ts');
-
-    if (existsSync(mainPath)) {
-      let mainContents = fs.readFileSync(path.join(resolvedSrcPath, 'main.ts')).toString();
-
-      let hasModuleMapInSrc = mainContents.includes(`'./config/module-map`) || mainContents.includes(`"./config/module-map"`);
-      let hasResolverConfigInSrc = mainContents.includes(`'./config/resolver-configuration`) || mainContents.includes(`"./config/resolver-configuration`);
-
-      if (hasModuleMapInSrc || hasResolverConfigInSrc) {
-        throw new SilentError(stripIndent`
-          Updates to your project structure are required to run with this version of @glimmer/application-pipeline.
-
-          Please update your project by running:
-
-            yarn upgrade @glimmer/blueprint
-            ember init -b @glimmer/blueprint
-        `);
+        appTree = new Funnel(appTree, { exclude: ['**/*.scss'] });
+        appTree = new MergeTrees([ appTree, scssTree ]);
       }
     }
+
+    return appTree;
   }
 }

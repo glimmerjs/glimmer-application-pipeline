@@ -1,6 +1,8 @@
 const nodeResolve = require('rollup-plugin-node-resolve');
 const babel = require('rollup-plugin-babel');
 const fs = require('fs');
+const BabelPresetEnv = require('babel-preset-env').default;
+import { Project, Tree, TreeEntry, RollupOptions } from '../interfaces';
 
 import DebugMacros from 'babel-plugin-debug-macros';
 
@@ -8,15 +10,25 @@ function hasPlugin(plugins, name) {
   return plugins.some(plugin => plugin.name === name);
 }
 
-export interface Rollup {
-  build()
-}
-
 export const Rollup: {
-  new (inputNode: any, options?: {}): Rollup;
+  new (inputNode: TreeEntry, options?): Tree;
 } = require('broccoli-rollup');
 
+export interface RollupWithDependenciesOptions {
+  inputFiles: string[];
+  rollup?: RollupOptions;
+  project: Project;
+}
+
 class RollupWithDependencies extends Rollup {
+  private project: Project;
+
+  constructor(inputTree, options: RollupWithDependenciesOptions) {
+    super(inputTree, options);
+
+    this.project = options.project;
+  }
+
   rollupOptions: any;
   inputPaths: any[];
 
@@ -32,10 +44,7 @@ class RollupWithDependencies extends Rollup {
     if (!hasPlugin(plugins, 'babel')) {
       plugins.push(babel({
         presets: [
-          [
-            'es2015',
-            { modules: false, loose: true }
-          ]
+          [BabelPresetEnv, { modules: false, loose: true, targets: this.project.targets }]
         ],
         plugins: [
           'external-helpers',

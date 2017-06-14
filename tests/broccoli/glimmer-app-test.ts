@@ -416,6 +416,74 @@ describe('glimmer-app', function() {
     });
   });
 
+  describe('testPackage', function() {
+    const ORIGINAL_EMBER_ENV = process.env.EMBER_ENV;
+
+    beforeEach(() => {
+      process.env.EMBER_ENV = 'test';
+    });
+
+    afterEach(() => {
+      process.env.EMBER_ENV = ORIGINAL_EMBER_ENV;
+    });
+
+    const tsconfigContents = stripIndent`
+      {
+        "compilerOptions": {
+          "target": "es6",
+          "module": "es2015",
+          "inlineSourceMap": true,
+          "inlineSources": true,
+          "moduleResolution": "node",
+          "experimentalDecorators": true
+        },
+        "exclude": [
+          "node_modules",
+          "tmp",
+          "dist"
+        ]
+      }
+    `;
+
+    it('builds test files along with src files', async function() {
+      input.write({
+        'src': {
+          'index.ts': 'console.log("foo");',
+          'ui': {
+            'components': {
+              'foo-bar': {
+                'template.d.ts': 'export default {};',
+                'template.hbs': `<div>Hello!</div>`,
+                'component.ts': 'console.log("qux"); export default class FooBar {}',
+                'component-test.ts': 'import template from "./template"; import FooBar from "./component"; console.log(template); console.log(FooBar);'
+              }
+            }
+          },
+          'utils': {
+            'test-helpers': {
+              'test-helper.ts': 'import "../../../tests"'
+            }
+          }
+        },
+        'config': {},
+        'tsconfig.json': tsconfigContents
+      });
+
+      let app = createApp({
+        trees: {
+          nodeModules: path.join(__dirname, '..', '..', '..', 'node_modules')
+        }
+      });
+      let output = await buildOutput(app.toTree());
+      let actual = output.read();
+
+      expect(app.env).to.eq('test');
+      expect(actual['index.js'], 'builds src').to.include('console.log("qux")');
+      expect(actual['index.js'], 'builds tests').to.include('console.log(FooBar)');
+      expect(actual['index.js'], 'builds module map which includes the compiled templates').to.include('Hello!');
+    });
+  });
+
   describe('toTree', function() {
 
     const tsconfigContents = stripIndent`
@@ -592,7 +660,9 @@ describe('glimmer-app', function() {
           'ui': {
             'index.html': 'src',
             'components': {
-              'foo-bar.hbs': `<div>Hello!</div>`
+              'foo-bar': {
+                'template.hbs': `<div>Hello!</div>`
+              }
             },
           }
         },

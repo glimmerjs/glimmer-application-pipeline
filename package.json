@@ -31,6 +31,7 @@
     "@glimmer/resolver-configuration-builder": "^0.1.2",
     "babel-plugin-debug-macros": "^0.1.7",
     "babel-plugin-external-helpers": "^6.22.0",
+    "babel-plugin-glimmer-inline-precompile": "^1.1.0",
     "babel-preset-env": "^1.5.1",
     "broccoli-asset-rev": "^2.4.3",
     "broccoli-babel-transpiler": "^6.0.0",

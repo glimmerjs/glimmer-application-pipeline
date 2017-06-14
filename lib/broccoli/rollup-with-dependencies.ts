@@ -1,9 +1,9 @@
 const nodeResolve = require('rollup-plugin-node-resolve');
 const babel = require('rollup-plugin-babel');
+const GlimmerInlinePrecompile = require('babel-plugin-glimmer-inline-precompile');
 const fs = require('fs');
 const BabelPresetEnv = require('babel-preset-env').default;
 import { Project, Tree, TreeEntry, RollupOptions, GlimmerAppOptions } from '../interfaces';
-
 import DebugMacros from 'babel-plugin-debug-macros';
 
 function hasPlugin(plugins, name) {
@@ -52,6 +52,7 @@ class RollupWithDependencies extends Rollup {
 
       let babelPlugins = [
         'external-helpers',
+        [GlimmerInlinePrecompile],
         [DebugMacros, {
           envFlags: {
             source: '@glimmer/env',

@@ -27,6 +27,7 @@ const debugTree: (inputTree: Tree, name: string) => Tree = require('broccoli-deb
 import RollupWithDependencies from './rollup-with-dependencies';
 import defaultModuleConfiguration from './default-module-configuration';
 import { Project, Addon, Tree, RollupOptions, Registry, GlimmerAppOptions } from '../interfaces';
+import TestEntrypointBuilder from './test-entrypoint-builder';
 
 export interface AbstractBuild {
   _notifyAddonIncluded(): void;
@@ -267,11 +268,16 @@ export default class GlimmerApp extends AbstractBuild {
     // and no other files from the original source tree
     let transpiledTypescriptTree = this.compiledTypeScriptTree(combinedConfigAndCompiledHandlebarsTree, nodeModules, tsConfig);
 
+    let trees = [srcWithoutHBSTree, transpiledTypescriptTree, configTree];
+    if (this.env === 'test') {
+      trees.push(new TestEntrypointBuilder(transpiledTypescriptTree));
+    }
+
     // Merge the JavaScript source and generated module map and resolver
     // configuration files together, making sure to overwrite the stub
     // module-map.js and resolver-configuration.js in the source tree with the
     // generated ones.
-    transpiledTypescriptTree = new MergeTrees([srcWithoutHBSTree, transpiledTypescriptTree, configTree], { overwrite: true });
+    transpiledTypescriptTree = new MergeTrees(trees, { overwrite: true });
 
     return this.processESLastest(transpiledTypescriptTree);
   }
@@ -316,12 +322,23 @@ Please run the following to resolve this warning:
     return config.GlimmerENV || config.EmberENV;
   }
 
+  private testPackage(): Tree {
+    return this.rollupTree(this.javascript(), {
+      entry: 'src/utils/test-helpers/test-helper.js',
+      dest: 'index.js'
+    });
+  }
+
   /**
    * Creates a Broccoli tree representing the compiled Glimmer application.
    *
    * @param options
    */
   public toTree() {
+    if (this.env === 'test') {
+      return this.testPackage();
+    }
+
     let jsTree = this.javascript();
     let cssTree = this.cssTree();
     let publicTree = this.publicTree();
@@ -347,13 +364,13 @@ Please run the following to resolve this warning:
     return maybeDebug(compiledHandlebarsTree, 'handlebars-output');
   }
 
-  private rollupTree(jsTree) {
+  private rollupTree(jsTree, options?) {
     let rollupOptions = Object.assign({}, this.rollupOptions, {
       format: 'umd',
       entry: 'src/index.js',
       dest: this.outputPaths.app.js,
       sourceMap: this.options.sourcemaps.enabled
-    });
+    }, options);
 
     return new RollupWithDependencies(maybeDebug(jsTree, 'rollup-input-tree'), {
       inputFiles: ['**/*.js'],

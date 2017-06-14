@@ -490,6 +490,10 @@ babel-plugin-filter-imports@~0.3.0:
   version "0.3.1"
   resolved "https://registry.yarnpkg.com/babel-plugin-filter-imports/-/babel-plugin-filter-imports-0.3.1.tgz#e7859b56886b175dd2616425d277b219e209ea8b"
 
+babel-plugin-glimmer-inline-precompile@^1.1.0:
+  version "1.1.0"
+  resolved "https://registry.npmjs.org/babel-plugin-glimmer-inline-precompile/-/babel-plugin-glimmer-inline-precompile-1.1.0.tgz#31a2506c7085ec138754098a16e702acd4cefe67"
+
 babel-plugin-strip-glimmer-utils@^0.1.1:
   version "0.1.1"
   resolved "https://registry.yarnpkg.com/babel-plugin-strip-glimmer-utils/-/babel-plugin-strip-glimmer-utils-0.1.1.tgz#df74a4a349d0b8522f434c457cb6cef20483c9ea"

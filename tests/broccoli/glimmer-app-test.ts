@@ -10,9 +10,8 @@ const stew = require('broccoli-stew');
 
 const { stripIndent } = require('common-tags');
 
-import GlimmerApp, {
-  GlimmerAppOptions
-} from '../../lib/broccoli/glimmer-app';
+import GlimmerApp from '../../lib/broccoli/glimmer-app';
+import { GlimmerAppOptions } from '../../lib/interfaces';
 
 const expect = require('../helpers/chai').expect;
 
@@ -461,6 +460,48 @@ describe('glimmer-app', function() {
 
       expect(actual['index.html']).to.equal('src');
       expect(actual['app.js']).to.include('Hello!');
+    });
+
+    describe('allows userland babel plugins', function() {
+      function reverser () {
+        return {
+          name: "ast-transform",
+          visitor: {
+            StringLiteral(path) {
+              path.node.value = path.node.value.split('').reverse().join('');
+            }
+          }
+        };
+      }
+
+      it('runs user-land plugins', async function() {
+        input.write({
+          'src': {
+            'index.ts': 'console.log(\'olleh\');',
+            'ui': {
+              'index.html': 'src'
+            }
+          },
+          'config': {},
+          'tsconfig.json': tsconfigContents
+        });
+
+        let app = createApp({
+          babel: {
+            plugins: [
+              [reverser]
+            ]
+          },
+          trees: {
+            nodeModules: path.join(__dirname, '..', '..', '..', 'node_modules')
+          }
+        });
+        let output = await buildOutput(app.toTree());
+        let actual = output.read();
+
+        expect(actual['index.html']).to.equal('src');
+        expect(actual['app.js']).to.include('hello');
+      });
     });
 
     describe('babel-plugin-debug-macros', function() {

@@ -2,7 +2,7 @@ const nodeResolve = require('rollup-plugin-node-resolve');
 const babel = require('rollup-plugin-babel');
 const fs = require('fs');
 const BabelPresetEnv = require('babel-preset-env').default;
-import { Project, Tree, TreeEntry, RollupOptions } from '../interfaces';
+import { Project, Tree, TreeEntry, RollupOptions, GlimmerAppOptions } from '../interfaces';
 
 import DebugMacros from 'babel-plugin-debug-macros';
 
@@ -18,15 +18,18 @@ export interface RollupWithDependenciesOptions {
   inputFiles: string[];
   rollup?: RollupOptions;
   project: Project;
+  buildConfig: GlimmerAppOptions;
 }
 
 class RollupWithDependencies extends Rollup {
   private project: Project;
+  private buildConfig: GlimmerAppOptions;
 
   constructor(inputTree, options: RollupWithDependenciesOptions) {
     super(inputTree, options);
 
     this.project = options.project;
+    this.buildConfig = options.buildConfig;
   }
 
   rollupOptions: any;
@@ -42,23 +45,42 @@ class RollupWithDependencies extends Rollup {
     }
 
     if (!hasPlugin(plugins, 'babel')) {
+      let buildConfig = this.buildConfig;
+
+      let userProvidedBabelConfig = buildConfig.babel && buildConfig.babel || {};
+      let userProvidedBabelPlugins = userProvidedBabelConfig.plugins || [];
+
+      let babelPlugins = [
+        'external-helpers',
+        [DebugMacros, {
+          envFlags: {
+            source: '@glimmer/env',
+            flags: { DEBUG: !isProduction, PROD: isProduction, CI: !!process.env.CI }
+          },
+
+          debugTools: {
+            source: '@glimmer/debug'
+          }
+        }],
+
+        ...userProvidedBabelPlugins
+      ];
+
+      let presetEnvConfig = Object.assign({ loose: true }, userProvidedBabelConfig, {
+        // ensure we do not carry forward `plugins`
+        plugins: undefined,
+
+        // do not transpile modules
+        modules: false,
+
+        targets: this.project.targets
+      });
+
       plugins.push(babel({
         presets: [
-          [BabelPresetEnv, { modules: false, loose: true, targets: this.project.targets }]
+          [BabelPresetEnv, presetEnvConfig]
         ],
-        plugins: [
-          'external-helpers',
-          [DebugMacros, {
-            envFlags: {
-              source: '@glimmer/env',
-              flags: { DEBUG: !isProduction, PROD: isProduction, CI: !!process.env.CI }
-            },
-
-            debugTools: {
-              source: '@glimmer/debug'
-            }
-          }]
-        ],
+        plugins: babelPlugins,
         sourceMaps: sourceMapsEnabled && 'inline',
         retainLines: false
       }));

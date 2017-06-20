@@ -16,6 +16,8 @@ import { GlimmerAppOptions } from '../../lib/interfaces';
 const expect = require('../helpers/chai').expect;
 
 describe('glimmer-app', function() {
+  this.timeout(15000);
+
   let input: TempDir;
 
   const ORIGINAL_EMBER_ENV = process.env.EMBER_ENV;
@@ -415,7 +417,6 @@ describe('glimmer-app', function() {
   });
 
   describe('toTree', function() {
-    this.timeout(10000);
 
     const tsconfigContents = stripIndent`
       {

@@ -26,8 +26,7 @@ const debugTree: (inputTree: Tree, name: string) => Tree = require('broccoli-deb
 
 import RollupWithDependencies from './rollup-with-dependencies';
 import defaultModuleConfiguration from './default-module-configuration';
-import { Project, Addon, Tree, RollupOptions } from '../interfaces';
-
+import { Project, Addon, Tree, RollupOptions, Registry, GlimmerAppOptions } from '../interfaces';
 
 export interface AbstractBuild {
   _notifyAddonIncluded(): void;
@@ -70,10 +69,6 @@ export interface AbstractBuild {
   package(jsTree: Tree, cssTree: Tree, publicTree: Tree, htmlTree: Tree): Tree;
 }
 
-export interface Registry {
-  add(type: string, plugin: Function)
-}
-
 export interface OutputPaths {
   app: {
     html: string;
@@ -83,23 +78,6 @@ export interface OutputPaths {
 }
 export interface EmberCLIDefaults {
   project: Project
-}
-
-export interface GlimmerAppOptions {
-  outputPaths?: {
-    app?: {
-      html?: string;
-      js?: string;
-      css?: string;
-    }
-  }
-  trees?: {
-    src?: Tree | string;
-    styles?: Tree | string;
-    nodeModules?: Tree | string;
-  }
-  registry?: Registry;
-  rollup?: RollupOptions;
 }
 
 export interface Trees {
@@ -124,7 +102,7 @@ export default class GlimmerApp extends AbstractBuild {
   private registry: Registry;
   private outputPaths: OutputPaths;
   private rollupOptions: RollupOptions;
-  protected options;
+  protected options: GlimmerAppOptions;
 
   protected trees: Trees;
 
@@ -380,7 +358,8 @@ Please run the following to resolve this warning:
     return new RollupWithDependencies(maybeDebug(jsTree, 'rollup-input-tree'), {
       inputFiles: ['**/*.js'],
       rollup: rollupOptions,
-      project: this.project
+      project: this.project,
+      buildConfig: this.options
     });
   }
 

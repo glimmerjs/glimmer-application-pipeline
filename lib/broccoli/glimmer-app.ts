@@ -195,6 +195,8 @@ export default class GlimmerApp extends AbstractBuild {
     } else if (!rawSrcTree) {
       let srcPath = resolveLocal(root, 'src');
       srcTree = existsSync(srcPath) ? new WatchedDir(srcPath) : null;
+    } else {
+      srcTree = rawSrcTree;
     }
 
     if (srcTree) {
@@ -212,6 +214,8 @@ export default class GlimmerApp extends AbstractBuild {
     } else if (!rawStylesTree) {
       let stylesPath= resolveLocal(root, path.join('src', 'ui', 'styles'));
       stylesTree = existsSync(stylesPath) ? new WatchedDir(stylesPath) : null;
+    } else {
+      stylesTree = rawStylesTree;
     }
 
     if (stylesTree) {

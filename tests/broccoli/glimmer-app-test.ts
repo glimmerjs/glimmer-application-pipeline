@@ -463,6 +463,41 @@ describe('glimmer-app', function() {
       expect(actual['app.js']).to.include('Hello!');
     });
 
+    it('works with the glimmer-custom-component-manager feature flag', async function() {
+      input.write({
+        'src': {
+          'index.ts': 'import template from "./ui/components/foo-bar"; console.log(template);',
+          'ui': {
+            'index.html': 'src',
+            'components': {
+              'foo-bar': {
+                'template.hbs': `{{use-component-manager "foo"}}<div>Hello!</div>`
+              }
+            },
+          }
+        },
+        'config': {
+          'environment.js': `
+          module.exports = function() {
+            return { GlimmerENV: { FEATURES: { 'glimmer-custom-component-manager': true } } };
+          };`
+        },
+        'tsconfig.json': tsconfigContents
+      });
+
+      let app = createApp({
+        trees: {
+          nodeModules: path.join(__dirname, '..', '..', '..', 'node_modules')
+        }
+      });
+      let output = await buildOutput(app.toTree());
+      let actual = output.read();
+
+      expect(actual['index.html']).to.equal('src');
+      expect(actual['app.js']).to.include('Hello!');
+      expect(actual['app.js']).to.include('"managerId": "foo"');
+    });
+
     describe('allows userland babel plugins', function() {
       function reverser () {
         return {

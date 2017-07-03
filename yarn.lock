@@ -60,6 +60,12 @@
   version "0.2.0"
   resolved "https://registry.yarnpkg.com/@glimmer/di/-/di-0.2.0.tgz#73bfd4a6ee4148a80bf092e8a5d29bcac9d4ce7e"
 
+"@glimmer/inline-precompile@^1.0.1":
+  version "1.0.1"
+  resolved "https://registry.npmjs.org/@glimmer/inline-precompile/-/inline-precompile-1.0.1.tgz#4201119a358002d4bb2b5d8fa633327239fb9336"
+  dependencies:
+    babel-plugin-glimmer-inline-precompile "^1.2.0"
+
 "@glimmer/interfaces@^0.26.2":
   version "0.26.2"
   resolved "https://registry.npmjs.org/@glimmer/interfaces/-/interfaces-0.26.2.tgz#f03e7309584006de164b82ff924692b210888e19"
@@ -490,9 +496,9 @@ babel-plugin-filter-imports@~0.3.0:
   version "0.3.1"
   resolved "https://registry.yarnpkg.com/babel-plugin-filter-imports/-/babel-plugin-filter-imports-0.3.1.tgz#e7859b56886b175dd2616425d277b219e209ea8b"
 
-babel-plugin-glimmer-inline-precompile@^1.1.0:
-  version "1.1.0"
-  resolved "https://registry.npmjs.org/babel-plugin-glimmer-inline-precompile/-/babel-plugin-glimmer-inline-precompile-1.1.0.tgz#31a2506c7085ec138754098a16e702acd4cefe67"
+babel-plugin-glimmer-inline-precompile@^1.2.0:
+  version "1.2.0"
+  resolved "https://registry.npmjs.org/babel-plugin-glimmer-inline-precompile/-/babel-plugin-glimmer-inline-precompile-1.2.0.tgz#02794b17aac6351da09596b54d9ec675428bba3e"
 
 babel-plugin-strip-glimmer-utils@^0.1.1:
   version "0.1.1"

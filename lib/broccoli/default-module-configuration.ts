@@ -2,7 +2,9 @@ export default {
   types: {
     application: { definitiveCollection: 'main' },
     component: { definitiveCollection: 'components' },
+    'component-test': { unresolvable: true },
     helper: { definitiveCollection: 'components' },
+    'helper-test': { unresolvable: true },
     renderer: { definitiveCollection: 'main' },
     template: { definitiveCollection: 'components' }
   },
@@ -12,7 +14,7 @@ export default {
     },
     components: {
       group: 'ui',
-      types: ['component', 'template', 'helper'],
+      types: ['component', 'component-test', 'template', 'helper', 'helper-test'],
       defaultType: 'component',
       privateCollections: ['utils']
     },

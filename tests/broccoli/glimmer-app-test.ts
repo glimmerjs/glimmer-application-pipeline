@@ -771,6 +771,30 @@ describe('glimmer-app', function() {
       expect(actual['app.js']).to.include('NOW YOU DON\'T');
     });
 
+    it('allows passing custom Broccoli nodes', async function() {
+      input.write({
+        'src': {
+          'index.ts': '',
+          'ui': {
+            'index.html': 'src'
+          }
+        },
+        'config': {},
+        'tsconfig.json': tsconfigContents
+      });
+
+      let app = createApp({
+        trees: {
+          src: stew.log(path.join(input.path(), 'src')),
+          nodeModules: path.join(__dirname, '..', '..', '..', 'node_modules')
+        },
+      });
+      let output = await buildOutput(app.toTree());
+      let actual = output.read();
+
+      expect(actual['app.js']).to.be.defined;
+    });
+
     describe('`getGlimmerEnvironment`', () => {
       it('returns application options from `config/environment.js` if it is specified via `GlimmerENV`', () => {
         input.write({

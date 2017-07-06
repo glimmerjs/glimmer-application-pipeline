@@ -73,5 +73,6 @@ export interface GlimmerAppOptions {
   }
   registry?: Registry;
   rollup?: RollupOptions;
-  sourcemaps?: { enabled?: boolean }
+  sourcemaps?: { enabled?: boolean };
+  storeConfigInMeta?: boolean;
 }

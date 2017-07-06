@@ -22,6 +22,7 @@ const setupRegistry = p.setupRegistry;
 const defaultRegistry = p.defaultRegistry;
 const preprocessJs = p.preprocessJs;
 const preprocessCss = p.preprocessCss;
+const writeFile = require('broccoli-file-creator');
 const debugTree: (inputTree: Tree, name: string) => Tree = require('broccoli-debug').buildDebugCallback('glimmer-app');
 
 import RollupWithDependencies from './rollup-with-dependencies';
@@ -150,7 +151,8 @@ export default class GlimmerApp extends AbstractBuild {
       },
       sourcemaps: {
         enabled: !isProduction
-      }
+      },
+      storeConfigInMeta: null
     }, upstreamDefaults);
 
     super(defaults, options);
@@ -392,9 +394,29 @@ Please run the following to resolve this warning:
     // Build the resolver configuration file.
     const resolverConfiguration = this.buildResolverConfiguration();
 
+    let configEnvironment;
+    if (this.options.storeConfigInMeta === true) {
+      configEnvironment = new MergeTrees([
+        writeFile('config/environment.js', `
+          var config;
+          try {
+            var metaName = '${this.name}/config/environment';
+            var rawConfig = document.querySelector('meta[name="' + metaName + '"]').getAttribute('content');
+            config = JSON.parse(decodeURIComponent(rawConfig));
+          }
+          catch(err) {
+            throw new Error('Could not read config from meta tag with name "' + metaName + '".');
+          }
+
+          export default config;
+        `),
+        writeFile('config/environment.d.ts', `declare let config: any; export default config;`)
+      ]);
+    }
+
     const configTree = this._configTree();
 
-    return new MergeTrees([moduleMap, resolverConfiguration, configTree]);
+    return debugTree(new MergeTrees([moduleMap, resolverConfiguration, configEnvironment, configTree].filter(Boolean)), 'config:output');
   }
 
   private buildResolutionMap(src) {
@@ -487,14 +509,10 @@ Please run the following to resolve this warning:
   }
 
   protected _contentForHead(content: string[], config) {
-    // TODO?
-    // content.push(calculateBaseTag(config));
-
-    // TODO?
-    // if (this.options.storeConfigInMeta) {
-    //   content.push('<meta name="' + config.modulePrefix + '/config/environment" ' +
-    //               'content="' + escape(JSON.stringify(config)) + '" />');
-    // }
+    if (this.options.storeConfigInMeta) {
+      content.push('<meta name="' + config.modulePrefix + '/config/environment" ' +
+                   'content="' + encodeURIComponent(JSON.stringify(config)) + '" />');
+    }
   }
 
   protected _configPath(): string {

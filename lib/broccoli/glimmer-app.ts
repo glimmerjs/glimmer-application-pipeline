@@ -50,6 +50,30 @@ function maybeDebug(inputTree: Tree | null, name: string): Tree | null {
   return debugTree(inputTree as Tree, name);
 }
 
+function normalizeTreeForType(rawTree: Tree | string, root: string, defaultPath: string): Tree {
+  let tree;
+  if (typeof rawTree === 'string') {
+    tree = new WatchedDir(resolveLocal(root, rawTree));
+  } else if (!rawTree) {
+    let path = resolveLocal(root, defaultPath);
+    tree = existsSync(path) ? new WatchedDir(path) : null;
+  } else {
+    tree = rawTree;
+  }
+
+  return tree;
+}
+
+function addonTreesFor(project: Project, type: string): Tree[] {
+  return project.addons.reduce((sum, addon) => {
+    if (addon.treeFor) {
+      let val = addon.treeFor(type);
+      if (val) { sum.push(val); }
+    }
+    return sum;
+  }, []);
+}
+
 const DEFAULT_TS_OPTIONS = {
   tsconfig: {
     compilerOptions: {
@@ -85,6 +109,7 @@ export interface EmberCLIDefaults {
 export interface Trees {
   src: Tree | null;
   styles: Tree | null;
+  public: Tree | null;
   nodeModules: Tree | null;
 }
 
@@ -187,20 +212,10 @@ export default class GlimmerApp extends AbstractBuild {
   }
 
   private buildTrees(options: GlimmerAppOptions): Trees {
-    let srcTree: Tree | null;
-    let stylesTree: Tree | null;
-
-    let rawSrcTree = options.trees && options.trees.src;
     let { project: { root } } = this;
 
-    if (typeof rawSrcTree === 'string') {
-      srcTree = new WatchedDir(resolveLocal(root, rawSrcTree));
-    } else if (!rawSrcTree) {
-      let srcPath = resolveLocal(root, 'src');
-      srcTree = existsSync(srcPath) ? new WatchedDir(srcPath) : null;
-    } else {
-      srcTree = rawSrcTree;
-    }
+    let rawSrcTree = options.trees && options.trees.src;
+    let srcTree: Tree | null = normalizeTreeForType(rawSrcTree, root, 'src');
 
     if (srcTree) {
       srcTree = new Funnel(srcTree, {
@@ -211,19 +226,14 @@ export default class GlimmerApp extends AbstractBuild {
     }
 
     let rawStylesTree = options.trees && options.trees.styles;
-
-    if (typeof rawStylesTree === 'string') {
-      stylesTree = new WatchedDir(resolveLocal(root, rawStylesTree));
-    } else if (!rawStylesTree) {
-      let stylesPath= resolveLocal(root, path.join('src', 'ui', 'styles'));
-      stylesTree = existsSync(stylesPath) ? new WatchedDir(stylesPath) : null;
-    } else {
-      stylesTree = rawStylesTree;
-    }
+    let stylesTree: Tree | null = normalizeTreeForType(rawStylesTree, root, path.join('src', 'ui', 'styles'));
 
     if (stylesTree) {
       stylesTree = new Funnel(stylesTree, { destDir: '/src/ui/styles' });
     }
+
+    let rawPublicTree = options.trees && options.trees.public;
+    let publicTree: Tree | null = normalizeTreeForType(rawPublicTree, root, 'public');
 
     let nodeModulesTree = options.trees && options.trees.nodeModules || new UnwatchedDir(resolveLocal(root, 'node_modules'));
 
@@ -236,6 +246,7 @@ export default class GlimmerApp extends AbstractBuild {
     return {
       src: maybeDebug(srcTree, 'src'),
       styles: maybeDebug(stylesTree, 'styles'),
+      public: maybeDebug(publicTree, 'public'),
       nodeModules: nodeModulesTree
     }
   }
@@ -452,13 +463,12 @@ Please run the following to resolve this warning:
   }
 
   private publicTree() {
-    let publicPath = 'public';
+    let trees = [].concat(
+      addonTreesFor(this.project, 'public'),
+      this.trees.public,
+    ).filter(Boolean);
 
-    if (fs.existsSync(publicPath)) {
-      return new Funnel(publicPath, {
-        annotation: 'Funnel: public'
-      });
-    }
+    return new MergeTrees(trees, { overwrite: true });
   }
 
   public htmlTree() {

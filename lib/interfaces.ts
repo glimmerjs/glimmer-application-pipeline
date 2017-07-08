@@ -2,6 +2,7 @@ export interface Addon {
   contentFor: (type: string, config, content: string[]) => string;
   preprocessTree: (type: string, tree: Tree) => Tree;
   included: (GlimmerApp) => void;
+  treeFor: (type: string) => Tree;
 }
 
 export interface Project {
@@ -69,6 +70,7 @@ export interface GlimmerAppOptions {
   trees?: {
     src?: Tree | string;
     styles?: Tree | string;
+    public?: Tree | string;
     nodeModules?: Tree | string;
   }
   registry?: Registry;

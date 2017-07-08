@@ -123,6 +123,55 @@ describe('glimmer-app', function() {
     });
   });
 
+  describe('publicTree', function() {
+    it('includes any files in `public/` in the project', async function() {
+      input.write({
+        'public': {
+          'hi.txt': 'hi hi'
+        },
+        'config': {},
+      });
+
+      let app = createApp();
+      let output = await buildOutput(app['publicTree']());
+
+      expect(output.read()).to.deep.equal({
+        'hi.txt': 'hi hi'
+      });
+    });
+
+    it('includes treeFor("public") from addons', async function() {
+      input.write({
+        'public': {
+          'hi.txt': 'hi hi'
+        },
+        'config': {},
+      });
+
+      let addonPublic = await createTempDir();
+
+      addonPublic.write({
+        'bye.txt': 'bye bye'
+      });
+
+      let app = createApp({}, [
+        {
+          name: 'thing-with-public',
+          treeFor(type) {
+            return addonPublic.path();
+          }
+        }
+      ]);
+
+      let output = await buildOutput(app['publicTree']());
+
+      expect(output.read()).to.deep.equal({
+        'hi.txt': 'hi hi',
+        'bye.txt': 'bye bye',
+      });
+    });
+  });
+
   describe('htmlTree', function() {
     it('emits index.html', async function () {
       input.write({

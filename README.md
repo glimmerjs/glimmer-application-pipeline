@@ -71,6 +71,36 @@ rollup: {
 }
 ```
 
+### Styles and SASS
+When an application is generated with ember-cli's blueprint - `ember new my-app -b @glimmer/blueprint`, it installs ember-cli addon [ember-cli-sass](https://www.npmjs.com/package/ember-cli-sass) which also is used in EmberJS applications. So you can tune it via options for GlimmerApp in the same way as in EmberApp (see [details](https://ember-cli.com/user-guide/#scsssass)).
+
+One of common requirements is to support imports (`@import`) from node_modules.
+For example, we need to import 3rd-party SASS overriding its variable (that's because we can't just use compiled css).
+
+```sass
+$mdc-theme-accent: #00e871;
+
+@import "../../../node_modules/material-components-web/material-components-web.scss";
+```
+
+By default we'll get an error on building:
+```
+Build failed.
+The Broccoli Plugin: [BroccoliMergeTrees] failed with:
+Error: File to import not found or unreadable: ../../../node_modules/material-components-web/material-components-web.scss.
+```
+To fix it we need to tell SASS compiler to look up in node_modules folder:
+```js
+module.exports = function(defaults) {
+  let app = new GlimmerApp(defaults, {
+    sassOptions: {
+      includePaths: [
+        'node_modules'
+      ]
+    }
+});
+```
+
 ### Customizing production and debug builds
 
 This enables any dependencies that are being built to do the following:

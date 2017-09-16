@@ -71,6 +71,7 @@ export interface GlimmerAppOptions {
     src?: Tree | string;
     styles?: Tree | string;
     public?: Tree | string;
+    tests?: Tree | string;
     nodeModules?: Tree | string;
   }
   registry?: Registry;

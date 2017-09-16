@@ -111,6 +111,7 @@ export interface Trees {
   styles: Tree | null;
   public: Tree | null;
   nodeModules: Tree | null;
+  tests: Tree | null;
 }
 
 /**
@@ -243,10 +244,22 @@ export default class GlimmerApp extends AbstractBuild {
       });
     }
 
+    let rawTestsTree = options.trees && options.trees.tests;
+    let testsTree: Tree | null = normalizeTreeForType(rawTestsTree, root, 'tests');
+
+    if (testsTree) {
+      testsTree = new Funnel(testsTree, {
+        destDir: 'tests'
+      });
+
+      testsTree = addonProcessTree(this.project, 'preprocessTree', 'tests', testsTree);
+    }
+
     return {
       src: maybeDebug(srcTree, 'src'),
       styles: maybeDebug(stylesTree, 'styles'),
       public: maybeDebug(publicTree, 'public'),
+      tests: maybeDebug(testsTree, 'test'),
       nodeModules: nodeModulesTree
     }
   }
@@ -340,10 +353,14 @@ Please run the following to resolve this warning:
   }
 
   private testPackage(): Tree {
-    return this.rollupTree(this.javascript(), {
+    let testJavascriptTree = this.rollupTree(this.javascript(), {
       entry: 'src/utils/test-helpers/test-helper.js',
-      dest: 'index.js'
+      dest: 'tests/index.js'
     });
+
+    let testHtmlTree = this.testHtmlTree();
+
+    return new MergeTrees([testJavascriptTree, testHtmlTree]);
   }
 
   /**
@@ -352,16 +369,20 @@ Please run the following to resolve this warning:
    * @param options
    */
   public toTree() {
-    if (this.env === 'test') {
-      return this.testPackage();
-    }
-
     let jsTree = this.javascript();
     let cssTree = this.cssTree();
     let publicTree = this.publicTree();
     let htmlTree = this.htmlTree();
 
-    return this.package(jsTree, cssTree, publicTree, htmlTree);
+    let packageTree = this.package(jsTree, cssTree, publicTree, htmlTree);
+
+    let trees = [ packageTree ];
+    if (this.env === 'test') {
+      let testTree = this.testPackage();
+      trees.push(testTree);
+    }
+
+    return new MergeTrees(trees);
   }
 
   private compiledTypeScriptTree(srcTree: Tree, nodeModulesTree: Tree, tsConfig: {}): Tree {
@@ -493,6 +514,21 @@ Please run the following to resolve this warning:
     return new ConfigReplace(index, this._configTree(), {
       configPath: this._configPath(),
       files: [ htmlName ],
+      patterns: this._configReplacePatterns()
+    });
+  }
+
+  public testHtmlTree() {
+    let testTree = this.trees.tests;
+
+    const index = new Funnel(testTree, {
+      files: [ 'tests/index.html' ],
+      annotation: 'Funnel: tests/index.html'
+    });
+
+    return new ConfigReplace(index, this._configTree(), {
+      configPath: this._configPath(),
+      files: [ 'tests/index.html' ],
       patterns: this._configReplacePatterns()
     });
   }

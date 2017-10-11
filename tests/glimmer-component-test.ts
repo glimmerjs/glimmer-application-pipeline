@@ -21,37 +21,54 @@ describe('Acceptance: ember generate and destroy glimmer-component', function() 
     });
   });
 
-  it('glimmer-component foo-bar', function () {
-    let args = ['glimmer-component', 'foo-bar'];
+  it('glimmer-component FooBar', function () {
+    let args = ['glimmer-component', 'FooBar'];
 
     return emberNew()
       .then(() => emberGenerateDestroy(args, (file) => {
-        expect(file('src/ui/components/foo-bar/component.ts'))
+        expect(file('src/ui/components/FooBar/component.ts'))
           .to.contain(`import Component from '@glimmer/component';`)
           .to.contain(`export default class FooBar extends Component {`);
 
-        expect(file('src/ui/components/foo-bar/template.hbs'))
+        expect(file('src/ui/components/FooBar/template.hbs'))
           .to.contain(`<div></div>`);
 
-        expect(file('src/ui/components/foo-bar/component.js')).to.not.exist;
-        expect(file('src/ui/components/foo-bar/helper.ts')).to.not.exist;
+        expect(file('src/ui/components/FooBar/component.js')).to.not.exist;
+        expect(file('src/ui/components/FooBar/helper.ts')).to.not.exist;
       }));
   });
 
-  it('glimmer-component foo/bar/x-baz', function () {
-    let args = ['glimmer-component', 'foo/bar/x-baz'];
+  it('glimmer-component foo/bar/X-Baz', function () {
+    let args = ['glimmer-component', 'foo/bar/X-Baz'];
 
     return emberNew()
       .then(() => emberGenerateDestroy(args, (file) => {
-        expect(file('src/ui/components/foo/bar/x-baz/component.ts'))
+        expect(file('src/ui/components/foo/bar/X-Baz/component.ts'))
           .to.contain(`import Component from '@glimmer/component';`)
           .to.contain(`export default class XBaz extends Component {`);
 
-        expect(file('src/ui/components/foo/bar/x-baz/template.hbs'))
+        expect(file('src/ui/components/foo/bar/X-Baz/template.hbs'))
           .to.contain(`<div></div>`);
 
-        expect(file('src/ui/components/foo/bar/x-baz/component.js')).to.not.exist;
-        expect(file('src/ui/components/foo/bar/x-baz/helper.ts')).to.not.exist;
+        expect(file('src/ui/components/foo/bar/X-Baz/component.js')).to.not.exist;
+        expect(file('src/ui/components/foo/bar/X-Baz/helper.ts')).to.not.exist;
+      }));
+  });
+
+  it('glimmer-component X-Foo/X-Bar/X-Baz', function () {
+    let args = ['glimmer-component', 'X-Foo/X-Bar/X-Baz'];
+
+    return emberNew()
+      .then(() => emberGenerateDestroy(args, (file) => {
+        expect(file('src/ui/components/X-Foo/X-Bar/X-Baz/component.ts'))
+          .to.contain(`import Component from '@glimmer/component';`)
+          .to.contain(`export default class XBaz extends Component {`);
+
+        expect(file('src/ui/components/X-Foo/X-Bar/X-Baz/template.hbs'))
+          .to.contain(`<div></div>`);
+
+        expect(file('src/ui/components/X-Foo/X-Bar/X-Baz/component.js')).to.not.exist;
+        expect(file('src/ui/components/X-Foo/X-Bar/X-Baz/helper.ts')).to.not.exist;
       }));
   });
 });

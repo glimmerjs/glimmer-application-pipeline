@@ -54,7 +54,6 @@
     "ember-cli-normalize-entity-name": "^1.0.0",
     "ember-cli-preprocess-registry": "^3.1.1",
     "ember-cli-string-utils": "^1.1.0",
-    "ember-cli-valid-component-name": "^1.0.0",
     "exists-sync": "^0.0.4",
     "glob": "^7.1.2",
     "heimdalljs-logger": "^0.1.9",

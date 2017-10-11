@@ -1,27 +1,23 @@
 'use strict';
 
-const stringUtils = require('ember-cli-string-utils');
-const validComponentName = require('ember-cli-valid-component-name');
-const normalizeEntityName = require('ember-cli-normalize-entity-name');
+const helpers = require('../helpers');
 
 module.exports = {
-  description: 'Generates a component test. Name must contain a hyphen.',
+  description: 'Generates a component test. Name must be capitalized.',
 
   normalizeEntityName(entityName) {
-    return validComponentName(normalizeEntityName(entityName));
+    return helpers.validComponentName(entityName);
   },
 
   fileMapTokens() {
     return {
       __name__(options) {
-        return options.dasherizedModuleName;
+        return options.locals.moduleName;
       },
     };
   },
 
   locals(options) {
-    let nameParts = options.entity.name.split('/');
-    let componentName = nameParts[nameParts.length - 1];
-    return { componentName };
+    return helpers.getComponentLocals(options.entity.name);
   },
 };

@@ -3,6 +3,7 @@ export interface Addon {
   preprocessTree: (type: string, tree: Tree) => Tree;
   included: (GlimmerApp) => void;
   treeFor: (type: string) => Tree;
+  lintTree: (type: string, tree: Tree) => Tree;
 }
 
 export interface Project {

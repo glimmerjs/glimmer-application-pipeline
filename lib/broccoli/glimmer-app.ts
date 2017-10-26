@@ -74,6 +74,21 @@ function addonTreesFor(project: Project, type: string): Tree[] {
   }, []);
 }
 
+function addonLintTree(project: Project, type: string, tree: Tree): Tree {
+  const lintTrees = project.addons.reduce((sum, addon) => {
+    if (addon.lintTree) {
+      let result = addon.lintTree(type, tree);
+      if (result) {
+        sum.push(result);
+      }
+    }
+
+    return sum;
+  }, []);
+
+  return new MergeTrees(lintTrees);
+}
+
 const DEFAULT_TS_OPTIONS = {
   tsconfig: {
     compilerOptions: {
@@ -287,7 +302,9 @@ export default class GlimmerApp extends AbstractBuild {
 
     let trees = [srcWithoutHBSTree, transpiledTypescriptTree, configTree];
     if (this.env === 'test') {
-      trees.push(new TestEntrypointBuilder(transpiledTypescriptTree));
+      const lintTrees = this.lint();
+      trees.push(new TestEntrypointBuilder(new MergeTrees([transpiledTypescriptTree, ...lintTrees])));
+      trees.push(...lintTrees);
     }
 
     // Merge the JavaScript source and generated module map and resolver
@@ -362,6 +379,23 @@ Please run the following to resolve this warning:
     let htmlTree = this.htmlTree();
 
     return this.package(jsTree, cssTree, publicTree, htmlTree);
+  }
+
+  private lint() {
+    let { src } = this.trees;
+
+    let templateTree = new Funnel(src, {
+      include: ['**/*.hbs']
+    });
+
+    let srcTree = new Funnel(src, {
+      exclude: ['**/*.hbs']
+    });
+
+    let lintedTemplates = addonLintTree(this.project, 'templates', templateTree);
+    let lintedSrc = addonLintTree(this.project, 'src', srcTree);
+
+    return [lintedTemplates, lintedSrc];
   }
 
   private compiledTypeScriptTree(srcTree: Tree, nodeModulesTree: Tree, tsConfig: {}): Tree {

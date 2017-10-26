@@ -7,6 +7,7 @@ import { buildOutput, createTempDir, TempDir } from 'broccoli-test-helper';
 const MockCLI = require('ember-cli/tests/helpers/mock-cli');
 const Project = require('ember-cli/lib/models/project');
 const stew = require('broccoli-stew');
+const td = require('testdouble');
 
 const { stripIndent } = require('common-tags');
 
@@ -122,6 +123,53 @@ describe('glimmer-app', function() {
       });
     });
   });
+
+  describe('lintTree', function() {
+    const ORIGINAL_EMBER_ENV = process.env.EMBER_ENV;
+
+    beforeEach(() => {
+      process.env.EMBER_ENV = 'test';
+    });
+
+    afterEach(() => {
+      process.env.EMBER_ENV = ORIGINAL_EMBER_ENV;
+    });
+
+    it('invokes lintTree hook on addons', async function() {
+      input.write({
+        'src': {
+          'ui': {
+            'index.html': 'src',
+          },
+          'utils': {
+            'test-helpers': {
+              'test-helper.ts': ''
+            }
+          }
+        },
+        'config': {}
+      });
+
+      let lint = td.function('lintTree');
+
+      let app = createApp({
+        trees: {
+          nodeModules: path.join(__dirname, '..', '..', '..', 'node_modules')
+        }
+      }, [
+        {
+          name: 'awesome-linter',
+          lintTree: lint
+        }
+      ]);
+
+      await buildOutput(app.toTree());
+      td.verify(lint('templates', td.matchers.anything()));
+      td.verify(lint('src', td.matchers.anything()));
+
+    });
+
+  }),
 
   describe('publicTree', function() {
     it('includes any files in `public/` in the project', async function() {

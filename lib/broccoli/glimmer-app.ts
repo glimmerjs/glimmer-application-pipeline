@@ -3,7 +3,6 @@ const ConfigLoader = require('broccoli-config-loader');
 const ConfigReplace = require('broccoli-config-replace');
 const Funnel = require('broccoli-funnel');
 const path  = require('path');
-const fs = require('fs');
 const typescript = require('broccoli-typescript-compiler').typescript;
 const existsSync = require('exists-sync');
 const MergeTrees = require('broccoli-merge-trees');
@@ -323,7 +322,6 @@ export default class GlimmerApp extends AbstractBuild {
   }
 
   public package(jsTree, cssTree, publicTree, htmlTree): Tree {
-    let missingPackages = [];
     jsTree = this.rollupTree(jsTree);
     let trees = [jsTree, htmlTree];
     if (cssTree) {
@@ -334,17 +332,6 @@ export default class GlimmerApp extends AbstractBuild {
     }
 
     let appTree = new MergeTrees(trees);
-
-    appTree = this.maybePerformDeprecatedSass(appTree, missingPackages);
-
-    if (missingPackages.length > 0) {
-      this.project.ui.writeWarnLine(
-`This project is relying on behaviors provided by @glimmer/application-pipeline that will be removed in future versions. The underlying functionality has now been migrated to be performed by addons in your project.
-
-Please run the following to resolve this warning:
-
-  ${missingPackages.join('\n  ')}`);
-    }
 
     appTree = addonProcessTree(this.project, 'postprocessTree', 'all', appTree);
     return appTree;
@@ -585,28 +572,5 @@ Please run the following to resolve this warning:
     this._cachedConfigTree = maybeDebug(namespacedConfigTree, 'config-tree');
 
     return this._cachedConfigTree;
-  }
-
-  private maybePerformDeprecatedSass(appTree, missingPackagesForDeprecationMessage) {
-    let stylesPath = path.join(resolveLocal(this.project.root, 'src'), 'ui', 'styles');
-
-    if (fs.existsSync(stylesPath)) {
-      let scssPath = path.join(stylesPath, 'app.scss');
-
-      if (fs.existsSync(scssPath) && !this.project.findAddonByName('ember-cli-sass')) {
-        missingPackagesForDeprecationMessage.push('ember install ember-cli-sass');
-
-        const compileSass = require('broccoli-sass');
-
-        let scssTree = compileSass([stylesPath], 'app.scss', this.outputPaths.app.css, {
-          annotation: 'Funnel: scss'
-        });
-
-        appTree = new Funnel(appTree, { exclude: ['**/*.scss'] });
-        appTree = new MergeTrees([ appTree, scssTree ]);
-      }
-    }
-
-    return appTree;
   }
 }

@@ -384,39 +384,6 @@ describe('glimmer-app', function() {
       expect(actual['app.css']).to.be.undefined;
     });
 
-    it('compiles sass', async function () {
-      input.write({
-        'app': {},
-        'src': {
-          'index.ts': '',
-          'ui': {
-            'index.html': '',
-            'styles': {
-              'app.scss': stripIndent`
-                $font-stack: Helvetica, sans-serif;
-                $primary-color: #333;
-
-                body { font: 100% $font-stack; color: $primary-color; }
-              `,
-            },
-          }
-        },
-        'config': {},
-      });
-
-      let app = createApp({
-        trees: {
-          nodeModules: path.join(__dirname, '..', '..', '..', 'node_modules')
-        }
-      }) as any;
-      let output = await buildOutput(app.toTree());
-      let actual = output.read();
-
-      expect(actual['app.css']).to.equal(
-        `body {\n  font: 100% Helvetica, sans-serif;\n  color: #333; }\n`
-      );
-    });
-
     it('passes through css', async function () {
       input.write({
         'app': {},
@@ -472,44 +439,6 @@ describe('glimmer-app', function() {
       let actual = output.read();
 
       expect(actual['foo-bar.css']).to.equal(`body { color: #333; }`);
-    });
-
-    it('respects outputPaths.app.css with sass', async function () {
-      input.write({
-        'app': {},
-        'src': {
-          'index.ts': '',
-          'ui': {
-            'index.html': '',
-            'styles': {
-              'app.scss': stripIndent`
-                $font-stack: Helvetica, sans-serif;
-                $primary-color: #333;
-
-                body { font: 100% $font-stack; color: $primary-color; }
-              `,
-            },
-          }
-        },
-        'config': {},
-      });
-
-      let app = createApp({
-        trees: {
-          nodeModules: path.join(__dirname, '..', '..', '..', 'node_modules')
-        },
-        outputPaths: {
-          app: {
-            css: 'foo-bar.css'
-          }
-        }
-      }) as any;
-      let output = await buildOutput(app.toTree());
-      let actual = output.read();
-
-      expect(actual['foo-bar.css']).to.equal(
-        `body {\n  font: 100% Helvetica, sans-serif;\n  color: #333; }\n`
-      );
     });
   });
 

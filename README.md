@@ -22,7 +22,7 @@ npm install --save-dev @glimmer/application-pipeline
 This package exports a `GlimmerApp` class.
 Using this class enables you to run your application code and assets through a broccoli pipeline, and calling `toTree()` will return a broccoli node with the processed files:
 
-```
+```javascript
 const { GlimmerApp } = require('@glimmer/application-pipeline');
 
 module.exports = function(defaults) {

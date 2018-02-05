@@ -3,15 +3,15 @@
 const fs = require('fs');
 const path = require('path');
 const walkSync = require('walk-sync');
+import CachingWriterPlugin = require("broccoli-caching-writer");
+import { Tree } from "broccoli";
 
-import { Tree, TreeEntry } from '../interfaces';
+export interface TestEntrypointBuilderOptions {
+  annotation?: string;
+}
 
-export const Plugin: {
-  new (inputNode: TreeEntry[], options?): Tree;
-} = require('broccoli-caching-writer');
-
-export default class TestEntrypointBuilder extends Plugin {
-  constructor(testTree, public options = {}) {
+export default class TestEntrypointBuilder extends CachingWriterPlugin {
+  constructor(testTree: Tree, public options: TestEntrypointBuilderOptions = {}) {
     super([testTree], {
       annotation: options['annotation']
     });
@@ -21,8 +21,8 @@ export default class TestEntrypointBuilder extends Plugin {
     let testDir = this.inputPaths[0];
     let testFiles = walkSync(testDir);
 
-    function isTest({ name }) { return name.match(/\-test$/); }
-    function asImportStatement({ dir, name }) {
+    function isTest({ name }: { name: string }) { return name.match(/\-test$/); }
+    function asImportStatement({ dir, name }: { dir: string, name: string }) {
       let testDirRelativePath = `./${path.join(dir, name)}`;
       return `import '${testDirRelativePath}';\n`;
     }

@@ -14,7 +14,7 @@ describe('Acceptance: ember generate and destroy glimmer-helper', function() {
     let args = ['glimmer-helper', 'foo'];
 
     return emberNew()
-      .then(() => emberGenerateDestroy(args, (file) => {
+      .then(() => emberGenerateDestroy(args, file => {
         expect(file('src/ui/components/foo/helper.ts'))
           .to.contain(`export default function foo(params) {`);
 
@@ -28,7 +28,7 @@ describe('Acceptance: ember generate and destroy glimmer-helper', function() {
     let args = ['glimmer-helper', 'foo-bar'];
 
     return emberNew()
-      .then(() => emberGenerateDestroy(args, (file) => {
+      .then(() => emberGenerateDestroy(args, file => {
         expect(file('src/ui/components/foo-bar/helper.ts'))
           .to.contain(`export default function fooBar(params) {`);
 

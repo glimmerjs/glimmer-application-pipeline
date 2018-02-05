@@ -13,6 +13,9 @@ const { stripIndent } = require('common-tags');
 
 import GlimmerApp from '../../lib/broccoli/glimmer-app';
 import { GlimmerAppOptions } from '../../lib/interfaces';
+import { Tree } from 'broccoli';
+import { NodePath } from "babel-traverse";
+import { StringLiteral } from 'babel-types';
 
 const expect = require('../helpers/chai').expect;
 
@@ -37,7 +40,7 @@ describe('glimmer-app', function() {
     return input.dispose();
   });
 
-  function createApp(options: GlimmerAppOptions = {}, addons = []): GlimmerApp {
+  function createApp(options: GlimmerAppOptions = {}, addons: any[] = []): GlimmerApp {
     let pkg = { name: 'glimmer-app-test' };
 
     let cli = new MockCLI();
@@ -65,9 +68,16 @@ describe('glimmer-app', function() {
       }).to.throw(/must pass through the default arguments/)
     });
 
+    it('throws an error if no src directory is found', function() {
+      expect(() => {
+        createApp();
+      }).to.throw(/Could not find a src\/ directory/);
+    });
+
     describe('env', function() {
       beforeEach(function() {
         delete process.env.EMBER_ENV;
+        input.write({ src: {} });
       });
 
       it('sets an `env`', function() {
@@ -106,8 +116,8 @@ describe('glimmer-app', function() {
       let app = createApp({}, [
         {
           name: 'awesome-reverser',
-          preprocessTree(type, tree) {
-            return stew.map(tree, (contents) => contents.split('').reverse().join(''));
+          preprocessTree(type: string, tree: Tree) {
+            return stew.map(tree, (contents: string) => contents.split('').reverse().join(''));
           }
         }
       ]);
@@ -177,6 +187,7 @@ describe('glimmer-app', function() {
         'public': {
           'hi.txt': 'hi hi'
         },
+        'src': {},
         'config': {},
       });
 
@@ -193,6 +204,7 @@ describe('glimmer-app', function() {
         'public': {
           'hi.txt': 'hi hi'
         },
+        'src': {},
         'config': {},
       });
 
@@ -205,7 +217,7 @@ describe('glimmer-app', function() {
       let app = createApp({}, [
         {
           name: 'thing-with-public',
-          treeFor(type) {
+          treeFor() {
             return addonPublic.path();
           }
         }
@@ -562,7 +574,7 @@ describe('glimmer-app', function() {
         return {
           name: "ast-transform",
           visitor: {
-            StringLiteral(path) {
+            StringLiteral(path: NodePath<StringLiteral>) {
               path.node.value = path.node.value.split('').reverse().join('');
             }
           }
@@ -675,7 +687,7 @@ describe('glimmer-app', function() {
         let outputFiles = Object.keys(actual);
         let appFile = outputFiles.find(fileName => fileName.startsWith('app'));
 
-        expect(actual[appFile]).to.include('false && console.assert(true');
+        expect(actual[appFile!]).to.include('false && console.assert(true');
       });
     });
 
@@ -783,7 +795,7 @@ describe('glimmer-app', function() {
           plugins: [
             {
               name: 'test-replacement',
-              transform(code, id) {
+              transform(code: string, id: string) {
                 return code.replace('NOW YOU SEE ME', 'NOW YOU DON\'T');
               }
             }

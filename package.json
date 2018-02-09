@@ -63,9 +63,9 @@
   },
   "devDependencies": {
     "@glimmer/build": "^0.8.4",
-    "@glimmer/compiler": "^0.26.2",
+    "@glimmer/compiler": "^0.31.0",
     "@glimmer/inline-precompile": "^1.0.1",
-    "@glimmer/resolver": "^0.3.0",
+    "@glimmer/resolver": "^0.4.2",
     "@types/babel-traverse": "^6.25.3",
     "@types/babel-types": "^7.0.0",
     "@types/chai": "^4.1.2",

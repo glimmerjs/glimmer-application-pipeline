@@ -3,16 +3,34 @@ const babel = require('rollup-plugin-babel');
 const GlimmerInlinePrecompile = require('babel-plugin-glimmer-inline-precompile');
 const fs = require('fs');
 const BabelPresetEnv = require('babel-preset-env').default;
-import { Project, Tree, TreeEntry, RollupOptions, GlimmerAppOptions } from '../interfaces';
+import { RollupOptions, GlimmerAppOptions } from '../interfaces';
 import DebugMacros from 'babel-plugin-debug-macros';
 
-function hasPlugin(plugins, name) {
+interface RollupPlugin {
+  name: string;
+}
+
+interface RollupError {
+  code: string;
+  message: string;
+}
+
+interface PackageJSON {
+  name: string;
+  main: string;
+  module: string;
+  'jsnext:main': string;
+}
+
+function hasPlugin(plugins: RollupPlugin[], name: string): boolean {
   return plugins.some(plugin => plugin.name === name);
 }
 
-export const Rollup: {
-  new (inputNode: TreeEntry, options?): Tree;
-} = require('broccoli-rollup');
+import Rollup = require('broccoli-rollup');
+import { Project } from 'ember-build-utilities';
+import { Tree } from 'broccoli';
+
+export { Rollup };
 
 export interface RollupWithDependenciesOptions {
   inputFiles: string[];
@@ -25,7 +43,7 @@ class RollupWithDependencies extends Rollup {
   private project: Project;
   private buildConfig: GlimmerAppOptions;
 
-  constructor(inputTree, options: RollupWithDependenciesOptions) {
+  constructor(inputTree: Tree, options: RollupWithDependenciesOptions) {
     super(inputTree, options);
 
     this.project = options.project;
@@ -35,7 +53,7 @@ class RollupWithDependencies extends Rollup {
   rollupOptions: any;
   inputPaths: any[];
 
-  build(...args) {
+  build(...args: any[]) {
     let plugins = this.rollupOptions.plugins || [];
     let sourceMapsEnabled = !!this.rollupOptions.sourceMap;
     let isProduction = process.env.EMBER_ENV === 'production';
@@ -101,7 +119,7 @@ class RollupWithDependencies extends Rollup {
         // packages have been updated to use the "Correct" module entry
         // point
         customResolveOptions:{
-          packageFilter(pkg, file) {
+          packageFilter(pkg: PackageJSON, file: string) {
             if (pkg.name.startsWith('@glimmer/')) {
               pkg.main = 'dist/modules/es2017/index.js';
             } else if (pkg.module) {
@@ -118,7 +136,7 @@ class RollupWithDependencies extends Rollup {
 
     this.rollupOptions.plugins = plugins;
 
-    this.rollupOptions.onwarn = function(warning) {
+    this.rollupOptions.onwarn = function(warning: RollupError) {
       // Suppress known error message caused by TypeScript compiled code with Rollup
       // https://github.com/rollup/rollup/wiki/Troubleshooting#this-is-undefined
       if (warning.code === 'THIS_IS_UNDEFINED') {
@@ -136,7 +154,7 @@ SOURCE_MAPPING_DATA_URL += 'pingURL=data:application/json;base64,';
 
 function loadWithInlineMap() {
   return {
-    load: function (id) {
+    load: function (id: string) {
       if (id.indexOf('\0') > -1) { return; }
 
       var code = fs.readFileSync(id, 'utf8');
@@ -155,7 +173,7 @@ function loadWithInlineMap() {
   };
 }
 
-function parseSourceMap(base64) {
+function parseSourceMap(base64: string) {
   return JSON.parse(new Buffer(base64, 'base64').toString('utf8'));
 }
 

@@ -62,10 +62,15 @@
     "walk-sync": "^0.3.1"
   },
   "devDependencies": {
-    "@glimmer/build": "^0.8.1",
+    "@glimmer/build": "^0.8.4",
     "@glimmer/compiler": "^0.26.2",
     "@glimmer/inline-precompile": "^1.0.1",
     "@glimmer/resolver": "^0.3.0",
+    "@types/babel-traverse": "^6.25.3",
+    "@types/babel-types": "^7.0.0",
+    "@types/chai": "^4.1.2",
+    "@types/chai-as-promised": "^7.1.0",
+    "@types/lodash.defaultsdeep": "^4.6.3",
     "@types/mocha": "^2.2.41",
     "@types/node": "^7.0.18",
     "broccoli-stew": "^1.5.0",

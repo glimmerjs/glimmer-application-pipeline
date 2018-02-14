@@ -148,6 +148,7 @@ describe('glimmer-app', function() {
     it('invokes lintTree hook on addons', async function() {
       input.write({
         'src': {
+          'index.ts': 'export default {};',
           'ui': {
             'index.html': 'src',
           },
@@ -245,7 +246,7 @@ describe('glimmer-app', function() {
       });
 
       let app = createApp();
-      let output = await buildOutput(app.htmlTree());
+      let output = await buildOutput(app['htmlTree']());
 
       expect(output.read()).to.deep.equal({
         'index.html': 'src',
@@ -352,7 +353,7 @@ describe('glimmer-app', function() {
           }
         },
         'src': {
-          'index.ts': '',
+          'index.ts': 'export default {};',
           'ui': {
             'index.html': 'src'
           },
@@ -377,7 +378,7 @@ describe('glimmer-app', function() {
       input.write({
         'app': {},
         'src': {
-          'index.ts': '',
+          'index.ts': 'export default {};',
           'ui': {
             'index.html': 'src',
           },
@@ -400,7 +401,7 @@ describe('glimmer-app', function() {
       input.write({
         'app': {},
         'src': {
-          'index.ts': '',
+          'index.ts': 'export default {};',
           'ui': {
             'index.html': '',
             'styles': {
@@ -426,7 +427,7 @@ describe('glimmer-app', function() {
       input.write({
         'app': {},
         'src': {
-          'index.ts': '',
+          'index.ts': 'console.log("hello world");',
           'ui': {
             'index.html': '',
             'styles': {
@@ -490,7 +491,7 @@ describe('glimmer-app', function() {
           'ui': {
             'components': {
               'foo-bar': {
-                'template.d.ts': 'export default {};',
+                'template.d.ts': 'declare const _d: {}; export default _d;',
                 'template.hbs': `<div>Hello!</div>`,
                 'component.ts': 'console.log("qux"); export default class FooBar {}',
                 'component-test.ts': 'import template from "./template"; import FooBar from "./component"; console.log(template); console.log(FooBar);'
@@ -750,7 +751,7 @@ describe('glimmer-app', function() {
     it('honors outputPaths.app.js', async function() {
       input.write({
         'src': {
-          'index.ts': '',
+          'index.ts': 'console.log("hello world");',
           'ui': {
             'index.html': 'src'
           }

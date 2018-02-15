@@ -546,12 +546,6 @@ export default class GlimmerApp extends AbstractBuild {
   }
 
   private buildResolutionMap(src: Tree) {
-    // if (this.templateFormat !== 'json') {
-    //   src = new Funnel(src, {
-    //     exclude: ['**/*.hbs']
-    //   });
-    // }
-
     return new ResolutionMapBuilder(src as any, this._configTree(), {
       srcDir: "src",
       configPath: this.configPath,

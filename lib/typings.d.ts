@@ -3,20 +3,12 @@ declare module "exists-sync" {
   export = existsSync;
 }
 
-declare module "broccoli-source" {
-  import Plugin = require('broccoli-plugin');
-
-  export class WatchedDir extends Plugin {
-    constructor(path: string);
-  }
-
-  export class UnwatchedDir {
-    constructor(path: string);
-  }
-}
+/**
+ * Broccoli
+ */
 
 declare module "broccoli" {
-  import Plugin = require("broccoli-plugin");
+  import Plugin from "broccoli-plugin";
   import { WatchedDir, UnwatchedDir } from "broccoli-source";
 
   export type Tree = string | Plugin | WatchedDir | UnwatchedDir;
@@ -29,11 +21,23 @@ declare module "broccoli-plugin" {
     build(): void;
   }
 
-  export = Plugin;
+  export default Plugin;
+}
+
+declare module "broccoli-source" {
+  import Plugin from "broccoli-plugin";
+
+  export class WatchedDir extends Plugin {
+    constructor(path: string);
+  }
+
+  export class UnwatchedDir {
+    constructor(path: string);
+  }
 }
 
 declare module "broccoli-caching-writer" {
-  import Plugin = require("broccoli-plugin");
+  import Plugin from "broccoli-plugin";
   import { Tree } from "broccoli";
 
   class CachingWriterPlugin extends Plugin {
@@ -42,8 +46,6 @@ declare module "broccoli-caching-writer" {
 
   export = CachingWriterPlugin;
 }
-
-declare module "babel-plugin-debug-macros";
 
 declare module "broccoli-debug" {
   import { Tree } from "broccoli";
@@ -112,6 +114,52 @@ declare module "broccoli-file-creator" {
   export = writeFile;
 }
 
+declare module "broccoli-merge-trees" {
+  import { Tree } from "broccoli";
+  import Plugin from "broccoli-plugin";
+
+  interface MergeTreesOptions {
+    overwrite?: boolean;
+  }
+
+  class MergeTrees extends Plugin {
+    constructor(trees: Tree[], options?: MergeTreesOptions);
+  }
+
+  export = MergeTrees;
+}
+
+declare module "broccoli-rollup" {
+  import Plugin from "broccoli-plugin";
+  import { Tree } from "broccoli";
+
+  class Rollup extends Plugin {
+    constructor(tree: Tree, options: any);
+  }
+
+  export = Rollup;
+}
+
+/**
+ * Babel Plugins
+ */
+
+declare module "babel-preset-env";
+declare module "babel-plugin-debug-macros";
+declare module "babel-plugin-external-helpers";
+declare module "babel-plugin-glimmer-inline-precompile";
+
+/**
+ * Rollup Plugins
+ */
+
+declare module "rollup-plugin-node-resolve";
+declare module "rollup-plugin-babel";
+
+/**
+ * Glimmer
+ */
+
 declare module "@glimmer/resolution-map-builder" {
   import { Tree } from "broccoli";
 
@@ -144,45 +192,9 @@ declare module "@glimmer/resolver-configuration-builder" {
 
   export = ResolverConfigurationBuilder;
 }
-
-declare module "ember-cli-blueprint-test-helpers/helpers" {
-  type FileHelper = (path: string) => string;
-
-  export function emberGenerateDestroy(args: string[], cb: (file: FileHelper) => void): Promise<void>;
-  export function emberGenerate(args: string[]): Promise<void>;
-  export function emberNew(): Promise<void>;
-  export function setupTestHooks(ctx: Mocha.ISuiteCallbackContext): void;
-}
-
-declare module "broccoli-rollup" {
-  import Plugin = require("broccoli-plugin");
-  import { Tree } from "broccoli";
-
-  class Rollup extends Plugin {
-    constructor(tree: Tree, options: any);
-  }
-
-  export = Rollup;
-}
-
-declare module "ember-cli-blueprint-test-helpers/chai" {
-  export { expect } from "chai";
-}
-
-declare module "broccoli-merge-trees" {
-  import { Tree } from "broccoli";
-  import Plugin = require("broccoli-plugin");
-
-  interface MergeTreesOptions {
-    overwrite?: boolean;
-  }
-
-  class MergeTrees extends Plugin {
-    constructor(trees: Tree[], options?: MergeTreesOptions);
-  }
-
-  export = MergeTrees;
-}
+/**
+ * Ember CLI
+ */
 
 declare module "ember-cli-preprocess-registry/preprocessors" {
   import { AbstractBuild } from "ember-build-utilities";
@@ -196,6 +208,19 @@ declare module "ember-cli-preprocess-registry/preprocessors" {
   export function defaultRegistry(app: AbstractBuild): Registry;
   export function preprocessJs(jsTree: Tree, inputPath: string, outputPath: string, options: any): Tree;
   export function preprocessCss(cssTree: Tree, inputPath: string, outputPath: string, options: any): Tree;
+}
+
+declare module "ember-cli-blueprint-test-helpers/chai" {
+  export { expect } from "chai";
+}
+
+declare module "ember-cli-blueprint-test-helpers/helpers" {
+  type FileHelper = (path: string) => string;
+
+  export function emberGenerateDestroy(args: string[], cb: (file: FileHelper) => void): Promise<void>;
+  export function emberGenerate(args: string[]): Promise<void>;
+  export function emberNew(): Promise<void>;
+  export function setupTestHooks(ctx: Mocha.ISuiteCallbackContext): void;
 }
 
 declare module "ember-build-utilities" {

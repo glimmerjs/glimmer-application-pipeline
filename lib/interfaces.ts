@@ -39,4 +39,5 @@ export interface GlimmerAppOptions {
   rollup?: RollupOptions;
   sourcemaps?: { enabled?: boolean };
   storeConfigInMeta?: boolean;
+  templateFormat?: 'json' | 'bytecode'
 }

@@ -1,10 +1,18 @@
-const nodeResolve = require('rollup-plugin-node-resolve');
-const babel = require('rollup-plugin-babel');
-const GlimmerInlinePrecompile = require('babel-plugin-glimmer-inline-precompile');
-const fs = require('fs');
-const BabelPresetEnv = require('babel-preset-env').default;
+import fs = require('fs');
+
+import nodeResolve = require('rollup-plugin-node-resolve');
+import babel = require('rollup-plugin-babel');
+
+import GlimmerInlinePrecompile = require('babel-plugin-glimmer-inline-precompile');
+import BabelPresetEnv from 'babel-preset-env';
+
+import ExternalHelpersPlugin = require('babel-plugin-external-helpers');
 import { RollupOptions, GlimmerAppOptions } from '../interfaces';
 import DebugMacros from 'babel-plugin-debug-macros';
+
+import Rollup = require('broccoli-rollup');
+import { Project } from 'ember-build-utilities';
+import { Tree } from 'broccoli';
 
 interface RollupPlugin {
   name: string;
@@ -26,12 +34,6 @@ function hasPlugin(plugins: RollupPlugin[], name: string): boolean {
   return plugins.some(plugin => plugin.name === name);
 }
 
-import Rollup = require('broccoli-rollup');
-import { Project } from 'ember-build-utilities';
-import { Tree } from 'broccoli';
-
-export { Rollup };
-
 export interface RollupWithDependenciesOptions {
   inputFiles: string[];
   rollup?: RollupOptions;
@@ -51,7 +53,6 @@ class RollupWithDependencies extends Rollup {
   }
 
   rollupOptions: any;
-  inputPaths: any[];
 
   build(...args: any[]) {
     let plugins = this.rollupOptions.plugins || [];
@@ -69,7 +70,7 @@ class RollupWithDependencies extends Rollup {
       let userProvidedBabelPlugins = userProvidedBabelConfig.plugins || [];
 
       let babelPlugins = [
-        'external-helpers',
+        [ExternalHelpersPlugin],
         [GlimmerInlinePrecompile],
         [DebugMacros, {
           envFlags: {
@@ -155,16 +156,17 @@ SOURCE_MAPPING_DATA_URL += 'pingURL=data:application/json;base64,';
 function loadWithInlineMap() {
   return {
     load: function (id: string) {
-      if (id.indexOf('\0') > -1) { return; }
+      if (id.indexOf('\0') > -1) { return null; }
 
-      var code = fs.readFileSync(id, 'utf8');
-      var result = {
+      let code = fs.readFileSync(id, 'utf8');
+      let result = {
         code: code,
         map: null
       };
-      var index = code.lastIndexOf(SOURCE_MAPPING_DATA_URL);
+
+      let index = code.lastIndexOf(SOURCE_MAPPING_DATA_URL);
       if (index === -1) {
-        return result;
+        return code;
       }
       result.code = code;
       result.map = parseSourceMap(code.slice(index + SOURCE_MAPPING_DATA_URL.length));

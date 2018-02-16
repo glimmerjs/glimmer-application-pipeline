@@ -1,6 +1,5 @@
 import path = require("path");
 import defaultsDeep = require("lodash.defaultsdeep");
-import existsSync = require("exists-sync");
 
 import { Tree } from "broccoli";
 import ConfigLoader = require("broccoli-config-loader");
@@ -13,11 +12,11 @@ import ConfigReplace = require("broccoli-config-replace");
 
 import ResolutionMapBuilder = require("@glimmer/resolution-map-builder");
 import ResolverConfigurationBuilder = require("@glimmer/resolver-configuration-builder");
+import { GlimmerBundleCompiler } from "@glimmer/app-compiler";
 
 import {
   Project,
   addonProcessTree,
-  GlimmerTemplatePrecompiler,
   resolveLocal,
   AbstractBuild,
   EmberCLIDefaults,
@@ -36,22 +35,10 @@ import maybeDebug from "./utils/maybe-debug";
 import normalizeTree from "./utils/normalize-tree"
 import { addonTreesFor, addonLintTree } from "./utils/addons";
 import RollupWithDependencies from "./rollup-with-dependencies";
+import GlimmerJSONCompiler from './compilers/glimmer-json-compiler';
 import defaultModuleConfiguration from "./default-module-configuration";
 import { GlimmerAppOptions } from "../interfaces";
 import TestEntrypointBuilder from "./test-entrypoint-builder";
-
-const DEFAULT_TS_OPTIONS = {
-  tsconfig: {
-    compilerOptions: {
-      target: "es5",
-      module: "es2015",
-      inlineSourceMap: true,
-      inlineSources: true,
-      moduleResolution: "node"
-    },
-    exclude: ["node_modules", "**/*.d.ts"]
-  }
-};
 
 export interface OutputPaths {
   app: {
@@ -89,13 +76,14 @@ class MissingProjectError extends Error {
  * @param {Object} [options=Options] Configuration options
  */
 export default class GlimmerApp extends AbstractBuild {
-  public project: Project;
+  public project!: Project;
   public name: string;
   public env: "production" | "development" | "test";
-  protected options: GlimmerAppOptions;
+  protected options!: GlimmerAppOptions;
   protected trees: Trees;
   protected registry: Registry;
   protected outputPaths: OutputPaths;
+  protected templateFormat: 'json' | 'bytecode';
 
   constructor(upstreamDefaults: EmberCLIDefaults, options: GlimmerAppOptions = {}) {
     if (arguments.length === 0 || !upstreamDefaults.project) {
@@ -116,6 +104,7 @@ export default class GlimmerApp extends AbstractBuild {
 
     this.trees = this.buildTrees(options);
     this.outputPaths = options.outputPaths as OutputPaths;
+    this.templateFormat = options.templateFormat!;
 
     this._notifyAddonIncluded();
   }
@@ -124,39 +113,60 @@ export default class GlimmerApp extends AbstractBuild {
     throw new Error("app.import is not yet implemented for GlimmerApp");
   }
 
-  /* Build Pipeline */
+  //
+  // USER HOOKS
+  //
 
   /**
-   * This hook is responsible for packaging assets together after they've been
-   * individually compiled. It receives the application's JavaScript as "loose
-   * modules" that are appropriate for bundling into optimized assets to be
-   * distributed to the browser, using a tool like webpack or Rollup (the
-   * default).
+   * This hook is responsible for compiling the application's files together
+   * after they've been individually processed. It receives the application's
+   * JavaScript as "loose modules" that are appropriate for bundling into
+   * optimized assets to be distributed to the browser, using a tool like
+   * webpack or Rollup (the default).
    */
-  public package(jsTree: Tree | null, cssTree: Tree | null, publicTree: Tree | null, htmlTree: Tree | null): Tree {
-    let trees: Tree[] = [];
+  public package(appTree: Tree): Tree {
+    let otherTrees: Tree[] = [];
 
-    if (jsTree) {
-      jsTree = this.rollupTree(jsTree);
-      trees.push(jsTree);
+    let jsTree: Tree = appTree;
+
+    if (this.emitBytecodeTemplates) {
+      let { gbxTree, dataSegmentTree } = this.compileTemplatesToBytecode(appTree);
+      jsTree = new MergeTrees([dataSegmentTree, appTree], { overwrite: true });
+      otherTrees.push(gbxTree);
     }
 
-    if (htmlTree) {
-      trees.push(htmlTree);
-    }
+    jsTree = this.rollupTree(jsTree);
 
-    if (cssTree) {
-      trees.push(cssTree);
-    }
+    appTree = new Funnel(appTree, {
+      exclude: ['**/*.js', '**/*.hbs']
+    });
 
-    if (publicTree) {
-      trees.push(publicTree);
-    }
+    let trees = [appTree, jsTree, ...otherTrees];
+    appTree = new MergeTrees(trees);
 
-    let appTree: Tree = new MergeTrees(trees);
     appTree = addonProcessTree(this.project, "postprocessTree", "all", appTree);
 
     return appTree;
+  }
+
+  /**
+   * Creates a Broccoli tree representing the compiled Glimmer application.
+   */
+  public toTree(): Tree {
+    if (this.env === "test") {
+      return this.testPackage();
+    }
+
+    let trees = [
+      this.javascriptTree(),
+      this.cssTree(),
+      this.hbsTree(),
+      this.htmlTree()
+    ].filter(Boolean) as Tree[];
+
+    let appTree = new MergeTrees(trees);
+
+    return new MergeTrees([this.publicTree(), this.package(appTree)]);
   }
 
   /**
@@ -206,7 +216,64 @@ export default class GlimmerApp extends AbstractBuild {
     };
   }
 
-  private cssTree(): Tree | null {
+  //
+  // TEMPLATE COMPILATION
+  //
+
+  /**
+   * True if the app should emit templates as Glimmer binary bytecode.
+   */
+  protected get emitBytecodeTemplates() {
+    return this.options.templateFormat === 'bytecode';
+  }
+
+  /**
+   * Given a Broccoli tree containing `.hbs` files, returns a tree with those
+   * templates transformed into their precompiled JSON form and saved as `.js`
+   * files.
+   */
+  protected compileTemplatesToJSON(appTree: Tree): Tree {
+    let glimmerEnv = this.getGlimmerEnvironment();
+    return new GlimmerJSONCompiler(appTree, {
+      rootName: this.project.pkg.name,
+      GlimmerENV: glimmerEnv
+    });
+  }
+
+  protected compileTemplatesToBytecode(appTree: Tree) {
+    let { project: { root } } = this;
+
+    // Template compiler needs access to root package.json
+    let pkgJsonTree = new UnwatchedDir(root);
+    pkgJsonTree = new Funnel(pkgJsonTree, {
+      include: ['package.json']
+    });
+
+    let templateTree: Tree = new MergeTrees([appTree, pkgJsonTree]);
+
+    let compiledOutput = new GlimmerBundleCompiler(templateTree, {
+      mode: 'module-unification',
+      outputFiles: {
+        heapFile: 'templates.gbx',
+        dataSegment: 'src/data-segment.js'
+      }
+    });
+
+    templateTree = new Funnel(compiledOutput, {
+      include: ['**/*.gbx']
+    });
+
+    let dataTree = new Funnel(compiledOutput, {
+      include: ['**/*.js']
+    });
+
+    return {
+      gbxTree: templateTree,
+      dataSegmentTree: dataTree
+    };
+  }
+
+  protected cssTree(): Tree | null {
     let { styles } = this.trees;
 
     if (!styles) { return null; }
@@ -236,7 +303,7 @@ export default class GlimmerApp extends AbstractBuild {
     );
   }
 
-  private publicTree() {
+  protected publicTree() {
     let trees = [
       ...addonTreesFor(this.project, "public"),
       this.trees.public
@@ -245,7 +312,7 @@ export default class GlimmerApp extends AbstractBuild {
     return new MergeTrees(trees as Tree[], { overwrite: true });
   }
 
-  public htmlTree() {
+  protected htmlTree() {
     let srcTree = this.trees.src;
 
     const htmlName = this.outputPaths.app.html;
@@ -271,7 +338,7 @@ export default class GlimmerApp extends AbstractBuild {
     });
   }
 
-  private contentFor(config: any, match: RegExp, type: string) {
+  protected contentFor(config: any, match: RegExp, type: string) {
     let content: string[] = [];
 
     switch (type) {
@@ -309,71 +376,64 @@ export default class GlimmerApp extends AbstractBuild {
     }];
   }
 
-  private tsOptions() {
-    let tsconfigPath = resolveLocal(this.project.root, "tsconfig.json");
-    let tsconfig;
+  /**
+   * Produces a Broccoli tree of all of the JavaScript files in the app as loose
+   * modules. Anything that is to be represented as JavaScript in the final
+   * output, such as TypeScript, should be transpiled here. Final packaging of
+   * the JavaScript modules happens in the `package()` hook.
+   */
+  protected javascriptTree(): Tree {
+    let { src: srcTree, nodeModules: nodeModulesTree } = this.trees;
 
-    if (existsSync(tsconfigPath)) {
-      try {
-        tsconfig = require(tsconfigPath);
-      } catch (err) {
-        console.log("Error reading from tsconfig.json");
-      }
-    } else {
-      console.log(
-        "No tsconfig.json found; falling back to default TypeScript settings."
-      );
-    }
-
-    return tsconfig ? { tsconfig } : DEFAULT_TS_OPTIONS;
-  }
-
-  private javascript(): Tree {
-    let { src, nodeModules } = this.trees;
-
-    let tsConfig = this.tsOptions();
-    let glimmerEnv = this.getGlimmerEnvironment();
-    let configTree = this.buildConfigTree(src!);
-    let srcWithoutHBSTree = new Funnel(src, {
-      exclude: ["**/*.hbs", "**/*.ts"]
-    });
-
-    // Compile the TypeScript and Handlebars files into JavaScript
-    let compiledHandlebarsTree = this.compiledHandlebarsTree(src!, glimmerEnv);
-    let combinedConfigAndCompiledHandlebarsTree = new MergeTrees([
-      configTree,
-      compiledHandlebarsTree
-    ]);
+    // Generate configuration files
+    let configTree: Tree = this.buildConfigTree(srcTree);
 
     // the output tree from typescript only includes the output from .ts -> .js transpilation
     // and no other files from the original source tree
-    let transpiledTypescriptTree = this.compiledTypeScriptTree(
-      combinedConfigAndCompiledHandlebarsTree,
-      nodeModules!,
-      tsConfig
-    );
+    let tsInput = new MergeTrees([configTree, srcTree, nodeModulesTree!]);
+    let tsTree = typescript(tsInput, {
+      workingPath: this.project.root
+    });
 
-    let trees = [srcWithoutHBSTree, transpiledTypescriptTree, configTree];
+    let jsTrees: Tree[] = [configTree, tsTree];
+
+    if (this.options.templateFormat === 'json') {
+      // Compile Handlebars templates to JavaScript
+      jsTrees.push(this.compileTemplatesToJSON(srcTree));
+    }
+
     if (this.env === "test") {
       const lintTrees = this.lint();
-      trees.push(
+      jsTrees.push(
         new TestEntrypointBuilder(
-          new MergeTrees([transpiledTypescriptTree, ...lintTrees])
+          new MergeTrees([tsTree, ...lintTrees])
         )
       );
-      trees.push(...lintTrees);
+      jsTrees.push(...lintTrees);
     }
 
     // Merge the JavaScript source and generated module map and resolver
     // configuration files together, making sure to overwrite the stub
     // module-map.js and resolver-configuration.js in the source tree with the
     // generated ones.
-    transpiledTypescriptTree = new MergeTrees(trees, { overwrite: true });
+    let jsTree: Tree = new MergeTrees(jsTrees, { overwrite: true });
 
-    return this.processESLastest(transpiledTypescriptTree);
+    jsTree = new Funnel(jsTree, {
+      include: ['**/*.js']
+    });
+
+    return this.processESLatest(jsTree);
   }
 
-  private processESLastest(tree: Tree): Tree {
+  private hbsTree(): Tree {
+    let { src } = this.trees;
+
+    return new Funnel(src, {
+      include: ['**/*.hbs']
+    });
+  }
+
+  private processESLatest(tree: Tree): Tree {
     return preprocessJs(tree, "/", this.name, {
       registry: this.registry
     });
@@ -385,34 +445,13 @@ export default class GlimmerApp extends AbstractBuild {
     return config.GlimmerENV || config.EmberENV;
   }
 
-  private testPackage(): Tree | null {
-    let jsTree = this.javascript();
-    if (!jsTree) {
-      return null;
-    }
+  private testPackage(): Tree {
+    let jsTree = this.javascriptTree();
 
     return this.rollupTree(jsTree, {
       entry: "src/utils/test-helpers/test-helper.js",
       dest: "index.js"
     });
-  }
-
-  /**
-   * Creates a Broccoli tree representing the compiled Glimmer application.
-   *
-   * @param options
-   */
-  public toTree() {
-    if (this.env === "test") {
-      return this.testPackage();
-    }
-
-    let jsTree = this.javascript();
-    let cssTree = this.cssTree();
-    let publicTree = this.publicTree();
-    let htmlTree = this.htmlTree();
-
-    return this.package(jsTree, cssTree, publicTree, htmlTree);
   }
 
   private lint() {
@@ -434,27 +473,6 @@ export default class GlimmerApp extends AbstractBuild {
     let lintedSrc = addonLintTree(this.project, "src", srcTree);
 
     return [lintedTemplates, lintedSrc];
-  }
-
-  private compiledTypeScriptTree(
-    srcTree: Tree,
-    nodeModulesTree: Tree,
-    tsConfig: {}
-  ): Tree {
-    let inputTrees = new MergeTrees([nodeModulesTree, srcTree]);
-
-    let compiledTypeScriptTree = typescript(inputTrees, tsConfig);
-
-    return maybeDebug(compiledTypeScriptTree, "typescript-output");
-  }
-
-  private compiledHandlebarsTree(srcTree: Tree, glimmerEnv: string) {
-    let compiledHandlebarsTree = new GlimmerTemplatePrecompiler(srcTree, {
-      rootName: this.project.pkg.name,
-      GlimmerENV: glimmerEnv
-    });
-
-    return maybeDebug(compiledHandlebarsTree, "handlebars-output");
   }
 
   private rollupTree(jsTree: Tree, options?: {}): Tree {
@@ -614,7 +632,8 @@ function getDefaultOptions(upstream: EmberCLIDefaults, isProduction: boolean): E
       sourcemaps: {
         enabled: !isProduction
       },
-      storeConfigInMeta: null
+      storeConfigInMeta: null,
+      templateFormat: 'json'
     },
     upstream
   );

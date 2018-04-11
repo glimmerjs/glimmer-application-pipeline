@@ -202,6 +202,7 @@ declare module "ember-cli-preprocess-registry/preprocessors" {
 
   export interface Registry {
     add(type: string, plugin: Function): void;
+    load(type: string): Function[];
   }
 
   export function setupRegistry(app: AbstractBuild): void;
@@ -225,12 +226,13 @@ declare module "ember-cli-blueprint-test-helpers/helpers" {
 
 declare module "ember-build-utilities" {
   import { Tree } from "broccoli";
-
+  import { ASTPluginBuilder } from "@glimmer/syntax"
   export function addonProcessTree(project: Project, hook: string, target: string, tree: Tree): Tree;
 
   interface GlimmerTemplatePrecompilerOptions {
     rootName: string;
     GlimmerENV: string;
+    plugins: { ast: ASTPluginBuilder[] }
   }
 
   export class GlimmerTemplatePrecompiler {

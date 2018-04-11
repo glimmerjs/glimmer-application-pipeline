@@ -13,6 +13,7 @@ import ConfigReplace = require("broccoli-config-replace");
 import ResolutionMapBuilder = require("@glimmer/resolution-map-builder");
 import ResolverConfigurationBuilder = require("@glimmer/resolver-configuration-builder");
 import { GlimmerBundleCompiler } from "@glimmer/app-compiler";
+import { ASTPluginBuilder } from "@glimmer/syntax";
 
 import {
   Project,
@@ -234,9 +235,13 @@ export default class GlimmerApp extends AbstractBuild {
    */
   protected compileTemplatesToJSON(appTree: Tree): Tree {
     let glimmerEnv = this.getGlimmerEnvironment();
+    let astPlugins = this.registry.load('glimmer-ast-plugin') as ASTPluginBuilder[];
     return new GlimmerJSONCompiler(appTree, {
       rootName: this.project.pkg.name,
-      GlimmerENV: glimmerEnv
+      GlimmerENV: glimmerEnv,
+      plugins: {
+        ast: astPlugins
+      }
     });
   }
 
@@ -250,12 +255,16 @@ export default class GlimmerApp extends AbstractBuild {
     });
 
     let templateTree: Tree = new MergeTrees([appTree, pkgJsonTree]);
+    let astPlugins = this.registry.load('glimmer-ast-plugin') as ASTPluginBuilder[];
 
     let compiledOutput = new GlimmerBundleCompiler(templateTree, {
       mode: 'module-unification',
       outputFiles: {
         heapFile: 'templates.gbx',
         dataSegment: 'src/data-segment.js'
+      },
+      bundleCompiler: {
+        plugins: astPlugins
       }
     });
 

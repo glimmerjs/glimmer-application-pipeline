@@ -1,4 +1,4 @@
-import { GlimmerTemplatePrecompiler, } from 'ember-build-utilities';
+import { GlimmerTemplatePrecompiler, GlimmerTemplatePrecompilerOptions } from 'ember-build-utilities';
 import { Tree } from 'broccoli';
 
 /**
@@ -8,7 +8,7 @@ import { Tree } from 'broccoli';
 export default class GlimmerJSONCompiler extends GlimmerTemplatePrecompiler {
   targetExtension: string;
 
-  constructor(inputNode: Tree, options: any) {
+  constructor(inputNode: Tree, options: GlimmerTemplatePrecompilerOptions) {
     super(inputNode, options);
     this.targetExtension = 'js';
   }

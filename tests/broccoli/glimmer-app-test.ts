@@ -1,6 +1,7 @@
 'use strict';
 
 const path = require('path');
+import { AST, ASTPlugin } from "@glimmer/syntax";
 
 import { buildOutput, createTempDir, TempDir } from 'broccoli-test-helper';
 
@@ -875,5 +876,50 @@ describe('glimmer-app', function() {
         expect(app.getGlimmerEnvironment()).to.deep.equal({ FEATURES: {} });
       });
     });
+
+    // describe('glimer-ast-plugin', () => {
+    //   it('applies `glimmer-ast-plugin`s discovered in the app registry', () => {
+    //     input.write({
+    //       'package.json': JSON.stringify(pkg),
+    //       'config': {
+    //         'resolver-configuration.d.ts': `declare var _default: any; export default _default;`
+    //       },
+    //       'src': {
+    //         'index.ts': indexTsContents,
+    //         'data-segment.d.ts': `declare var _default: any; export default _default;`,
+    //         'ui': {
+    //           'index.html': 'src',
+    //           'components': {
+    //             'App': {
+    //               'template.hbs': `<div>Hello!</div>`,
+    //               'component.ts': `import Component from "@glimmer/component"; export default class extends Component { };`
+    //             }
+    //           }
+    //         }
+    //       },
+    //       'tsconfig.json': tsconfigContents
+    //     });
+
+    //     let app = createApp({
+    //       trees: {
+    //         nodeModules: path.join(__dirname, '..', '..', '..', 'node_modules')
+    //       }
+    //     });
+
+    //     app.getRegistry().add('glimmer-ast-plugin', function (): ASTPlugin {
+    //       return {
+    //         name: 'test-plugin',
+    //         visitor: {
+    //           ElementNode(node: AST.ElementNode) {
+    //             node.tag = 'span';
+    //           }
+    //         }
+    //       }
+    //     });
+    //
+    //     TODO: Add assertions here.
+    //   });
+    // });
+
   });
 });

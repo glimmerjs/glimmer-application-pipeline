@@ -17,8 +17,13 @@ import { GlimmerAppOptions } from '../../lib/interfaces';
 import { Tree } from 'broccoli';
 import { NodePath } from "babel-traverse";
 import { StringLiteral } from 'babel-types';
+import * as SimpleDOM from 'simple-dom';
 
 const expect = require('../helpers/chai').expect;
+
+class TestGlimmerApp extends GlimmerApp {
+  public getRegistry() { return this.registry; }
+}
 
 describe('glimmer-app', function() {
   this.timeout(15000);
@@ -41,7 +46,7 @@ describe('glimmer-app', function() {
     return input.dispose();
   });
 
-  function createApp(options: GlimmerAppOptions = {}, addons: any[] = []): GlimmerApp {
+  function createApp(options: GlimmerAppOptions = {}, addons: any[] = []): TestGlimmerApp {
     let pkg = { name: 'glimmer-app-test' };
 
     let cli = new MockCLI();
@@ -49,7 +54,7 @@ describe('glimmer-app', function() {
     project.initializeAddons();
     project.addons = project.addons.concat(addons);
 
-    return new GlimmerApp({
+    return new TestGlimmerApp({
       project
     }, options);
   }
@@ -778,6 +783,7 @@ describe('glimmer-app', function() {
     });
 
     it('allows specifying rollup options', async function() {
+
       input.write({
         'src': {
           'index.ts': 'console.log("NOW YOU SEE ME");',
@@ -877,49 +883,96 @@ describe('glimmer-app', function() {
       });
     });
 
-    // describe('glimer-ast-plugin', () => {
-    //   it('applies `glimmer-ast-plugin`s discovered in the app registry', () => {
-    //     input.write({
-    //       'package.json': JSON.stringify(pkg),
-    //       'config': {
-    //         'resolver-configuration.d.ts': `declare var _default: any; export default _default;`
-    //       },
-    //       'src': {
-    //         'index.ts': indexTsContents,
-    //         'data-segment.d.ts': `declare var _default: any; export default _default;`,
-    //         'ui': {
-    //           'index.html': 'src',
-    //           'components': {
-    //             'App': {
-    //               'template.hbs': `<div>Hello!</div>`,
-    //               'component.ts': `import Component from "@glimmer/component"; export default class extends Component { };`
-    //             }
-    //           }
-    //         }
-    //       },
-    //       'tsconfig.json': tsconfigContents
-    //     });
+    describe('glimer-ast-plugin', () => {
+      it('applies `glimmer-ast-plugin`s discovered in the app registry', async () => {
 
-    //     let app = createApp({
-    //       trees: {
-    //         nodeModules: path.join(__dirname, '..', '..', '..', 'node_modules')
-    //       }
-    //     });
+        input.write({
+          'package.json': JSON.stringify({ name: 'glimmer-app-test', version: '0.1.0' }),
+          'config': {
+            'resolver-configuration.d.ts': `declare var _default: any; export default _default;`,
+            'module-map.d.ts': `export interface Dict<T> { [index: string]: T; } declare let map: Dict<any>; export default map;`
+          },
+          'src': {
+            'index.ts': `
+              import Application, { DOMBuilder, RuntimeCompilerLoader, SyncRenderer } from '@glimmer/application';
+              import { ComponentManager, setPropertyDidChange } from '@glimmer/component';
+              import Resolver, { BasicModuleRegistry } from '@glimmer/resolver';
+              import moduleMap from '../config/module-map';
+              import resolverConfiguration from '../config/resolver-configuration';
 
-    //     app.getRegistry().add('glimmer-ast-plugin', function (): ASTPlugin {
-    //       return {
-    //         name: 'test-plugin',
-    //         visitor: {
-    //           ElementNode(node: AST.ElementNode) {
-    //             node.tag = 'span';
-    //           }
-    //         }
-    //       }
-    //     });
-    //
-    //     TODO: Add assertions here.
-    //   });
-    // });
+              exports = function(document) {
+                let moduleRegistry = new BasicModuleRegistry(moduleMap);
+                let resolver = new Resolver(resolverConfiguration, moduleRegistry);
 
+                const app = new Application({
+                  document,
+                  builder: new DOMBuilder({ element: document.body, nextSibling: null }),
+                  loader: new RuntimeCompilerLoader(resolver),
+                  renderer: new SyncRenderer(),
+                  resolver,
+                  rootName: resolverConfiguration.app.rootName,
+                });
+
+                app.registerInitializer({
+                  initialize(registry) {
+                    registry.register(\`component-manager:/\${app.rootName}/component-managers/main\`, ComponentManager);
+                  },
+                });
+
+                return app;
+              };
+            `,
+            'ui': {
+              'index.html': 'src',
+              'components': {
+                'App': {
+                  'template.hbs': `<div>Hello!</div>`,
+                  'component.ts': `import Component from "@glimmer/component"; export default class extends Component { };`
+                }
+              }
+            },
+          },
+          'tsconfig.json': tsconfigContents
+        });
+
+        let app = createApp({
+          trees: {
+            nodeModules: path.join(__dirname, '..', '..', '..', 'node_modules')
+          }
+        });
+
+        app.getRegistry().add('glimmer-ast-plugin', function (): ASTPlugin {
+          return {
+            name: 'test-plugin',
+            visitor: {
+              ElementNode(node: AST.ElementNode) {
+                node.tag = 'span';
+              }
+            }
+          }
+        });
+
+        let output = await buildOutput(app.toTree());
+
+        let actual = output.read();
+        let buildApp = evalModule(actual['app.js'] as string);
+        let doc = new SimpleDOM.Document();
+        let glimmerApp = buildApp(doc);
+
+        glimmerApp.renderComponent('App', doc.body, null);
+        await glimmerApp.boot();
+        let serializer = new SimpleDOM.HTMLSerializer(SimpleDOM.voidMap);
+        let html = serializer.serializeChildren(doc.body as any).trim();
+        expect(html).to.deep.equal(stripIndent`<span>Hello!</span><!---->`);
+      });
+    });
   });
 });
+
+function evalModule(source: string): any {
+  const wrapper = `(function(exports) { ${source}; return exports; })`;
+  const func = eval(wrapper);
+  const moduleExports = func({});
+
+  return moduleExports;
+}

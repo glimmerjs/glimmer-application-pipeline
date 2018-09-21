@@ -458,8 +458,12 @@ export default class GlimmerApp extends AbstractBuild {
     let jsTree = this.javascriptTree();
 
     return this.rollupTree(jsTree, {
-      entry: "src/utils/test-helpers/test-helper.js",
-      dest: "index.js"
+      input: "src/utils/test-helpers/test-helper.js",
+      output: {
+        format: "umd",
+        file: "index.js",
+        sourcemap: this.options.sourcemaps!.enabled
+      }
     });
   }
 
@@ -489,10 +493,12 @@ export default class GlimmerApp extends AbstractBuild {
       {},
       this.options.rollup,
       {
-        format: "umd",
-        entry: "src/index.js",
-        dest: this.outputPaths.app.js,
-        sourceMap: this.options.sourcemaps!.enabled
+        input: "src/index.js",
+        output: {
+          format: "umd",
+          file: this.outputPaths.app.js,
+          sourcemap: this.options.sourcemaps!.enabled
+        }
       },
       options
     );

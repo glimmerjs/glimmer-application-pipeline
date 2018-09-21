@@ -694,7 +694,7 @@ describe('glimmer-app', function() {
         let outputFiles = Object.keys(actual);
         let appFile = outputFiles.find(fileName => fileName.startsWith('app'));
 
-        expect(actual[appFile!]).to.include('false && console.assert(true');
+        expect(actual[appFile!]).to.not.include('assert(true');
       });
     });
 

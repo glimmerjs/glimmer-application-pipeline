@@ -206,7 +206,7 @@ function readFileAsArrayBuffer(filePath: string) {
 }
 
 function evalModule(source: string): any {
-  const wrapper = `(function(exports) { ${source}; return exports; })`;
+  const wrapper = `(function(exports) { ${source}\n; return exports; })`;
   const func = eval(wrapper);
   const moduleExports = func({});
 

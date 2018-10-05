@@ -11,6 +11,7 @@
     "build": "ember build",
     "preversion": "yarn test",
     "prepublish": "yarn run build",
+    "prepare": "yarn run build",
     "postpublish": "git push origin master --tags",
     "pretest": "ember build",
     "test": "yarn run problems && mocha dist/tests --recursive",

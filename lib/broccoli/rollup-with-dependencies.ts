@@ -44,9 +44,15 @@ export interface RollupWithDependenciesOptions {
 class RollupWithDependencies extends Rollup {
   private project: Project;
   private buildConfig: GlimmerAppOptions;
+  private _inputNodes!: Tree[];
+  protected nodeModulesPath!: string;
 
   constructor(inputTree: Tree, options: RollupWithDependenciesOptions) {
     super(inputTree, options);
+
+    if (options.buildConfig.trees && options.buildConfig.trees.nodeModules) {
+      this._inputNodes.push(options.buildConfig.trees.nodeModules);
+    }
 
     this.project = options.project;
     this.buildConfig = options.buildConfig;
@@ -58,6 +64,10 @@ class RollupWithDependencies extends Rollup {
     let plugins = this.rollupOptions.plugins || [];
     let sourceMapsEnabled = !!this.rollupOptions.sourceMap;
     let isProduction = process.env.EMBER_ENV === 'production';
+
+    if (this.inputPaths[1]) {
+      this.nodeModulesPath = this.inputPaths[1];
+    }
 
     if (sourceMapsEnabled) {
       plugins.push(loadWithInlineMap());

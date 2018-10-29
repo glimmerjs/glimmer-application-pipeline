@@ -143,11 +143,8 @@ export default class GlimmerApp extends AbstractBuild {
     });
 
     let trees = [appTree, jsTree, ...otherTrees];
-    appTree = new MergeTrees(trees);
+    return new MergeTrees(trees);
 
-    appTree = addonProcessTree(this.project, "postprocessTree", "all", appTree);
-
-    return appTree;
   }
 
   /**
@@ -167,7 +164,8 @@ export default class GlimmerApp extends AbstractBuild {
 
     let appTree = new MergeTrees(trees);
 
-    return new MergeTrees([this.publicTree(), this.package(appTree)]);
+    let packagedTree = new MergeTrees([this.publicTree(), this.package(appTree)]);
+    return addonProcessTree(this.project, "postprocessTree", "all", packagedTree);
   }
 
   /**

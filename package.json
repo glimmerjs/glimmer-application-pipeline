@@ -83,7 +83,7 @@
     "mocha": "^3.4.1",
     "simple-dom": "^1.4.0-alpha.82914663",
     "testdouble": "^2.1.2",
-    "typescript": "~2.7.0"
+    "typescript": "~3.1.4"
   },
   "ember-addon": {
     "main": "ember-cli-addon.js"

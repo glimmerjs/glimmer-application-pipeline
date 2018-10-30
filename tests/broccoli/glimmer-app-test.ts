@@ -883,7 +883,7 @@ describe('glimmer-app', function() {
       });
     });
 
-    describe('glimer-ast-plugin', () => {
+    describe('glimmer-ast-plugin', () => {
       it('applies `glimmer-ast-plugin`s discovered in the app registry', async () => {
 
         input.write({

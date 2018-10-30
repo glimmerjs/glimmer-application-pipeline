@@ -67,7 +67,7 @@ class MissingProjectError extends Error {
   message = "You must pass through the default arguments passed into your ember-cli-build.js file when constructing a new GlimmerApp";
 }
 
-type GlimmerPossibleEnvironments = "production" | "development" | "test";
+export type GlimmerPossibleEnvironments = "production" | "development" | "test";
 
 /**
  * GlimmerApp provides an interface to a package (app, engine, or addon)

@@ -970,7 +970,7 @@ describe('glimmer-app', function() {
 });
 
 function evalModule(source: string): any {
-  const wrapper = `(function(exports) { ${source}; return exports; })`;
+  const wrapper = `(function(exports) {\n ${source}\n; return exports; })`;
   const func = eval(wrapper);
   const moduleExports = func({});
 

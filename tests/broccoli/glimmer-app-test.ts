@@ -26,7 +26,7 @@ class TestGlimmerApp extends GlimmerApp {
 }
 
 describe('glimmer-app', function() {
-  this.timeout(15000);
+  this.timeout(30000);
 
   let input: TempDir;
 

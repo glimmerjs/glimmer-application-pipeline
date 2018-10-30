@@ -71,6 +71,7 @@
     "@types/babel-types": "^7.0.0",
     "@types/chai": "^4.1.2",
     "@types/chai-as-promised": "^7.1.0",
+    "@types/chokidar": "^1.7.5",
     "@types/lodash.defaultsdeep": "^4.6.3",
     "@types/mocha": "^2.2.41",
     "@types/node": "^7.0.18",
@@ -82,6 +83,7 @@
     "ember-cli-blueprint-test-helpers": "^0.17.2",
     "mocha": "^3.4.1",
     "simple-dom": "^1.4.0-alpha.82914663",
+    "source-map": "^0.7.3",
     "testdouble": "^2.1.2",
     "typescript": "~3.1.4"
   },

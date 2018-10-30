@@ -12,12 +12,10 @@
     "outDir": "dist",
     "strict": true,
     "types": ["mocha","node"],
-    "typeRoots": ["node_modules/@types"],
     "lib": [
       "dom",
       "es2015"
-    ],
-    "skipLibCheck": true
+    ]
   },
   "include": [
     "lib/**/*.ts",

@@ -67,6 +67,8 @@ class MissingProjectError extends Error {
   message = "You must pass through the default arguments passed into your ember-cli-build.js file when constructing a new GlimmerApp";
 }
 
+export type GlimmerPossibleEnvironments = "production" | "development" | "test";
+
 /**
  * GlimmerApp provides an interface to a package (app, engine, or addon)
  * compatible with the module unification layout.
@@ -79,7 +81,7 @@ class MissingProjectError extends Error {
 export default class GlimmerApp extends AbstractBuild {
   public project!: Project;
   public name: string;
-  public env: "production" | "development" | "test";
+  public env: GlimmerPossibleEnvironments;
   protected options!: GlimmerAppOptions;
   protected trees: Trees;
   protected registry: Registry;
@@ -91,7 +93,7 @@ export default class GlimmerApp extends AbstractBuild {
       throw new MissingProjectError();
     }
 
-    let env = process.env.EMBER_ENV || "development";
+    let env = (process.env.EMBER_ENV as GlimmerPossibleEnvironments) || "development";
     let isProduction = env === "production";
     let defaults = getDefaultOptions(upstreamDefaults, isProduction);
 
@@ -143,11 +145,8 @@ export default class GlimmerApp extends AbstractBuild {
     });
 
     let trees = [appTree, jsTree, ...otherTrees];
-    appTree = new MergeTrees(trees);
+    return new MergeTrees(trees);
 
-    appTree = addonProcessTree(this.project, "postprocessTree", "all", appTree);
-
-    return appTree;
   }
 
   /**
@@ -167,7 +166,8 @@ export default class GlimmerApp extends AbstractBuild {
 
     let appTree = new MergeTrees(trees);
 
-    return new MergeTrees([this.publicTree(), this.package(appTree)]);
+    let packagedTree = new MergeTrees([this.publicTree(), this.package(appTree)]);
+    return addonProcessTree(this.project, "postprocessTree", "all", packagedTree);
   }
 
   /**

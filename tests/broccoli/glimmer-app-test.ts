@@ -26,7 +26,7 @@ class TestGlimmerApp extends GlimmerApp {
 }
 
 describe('glimmer-app', function() {
-  this.timeout(15000);
+  this.timeout(30000);
 
   let input: TempDir;
 
@@ -883,7 +883,7 @@ describe('glimmer-app', function() {
       });
     });
 
-    describe('glimer-ast-plugin', () => {
+    describe('glimmer-ast-plugin', () => {
       it('applies `glimmer-ast-plugin`s discovered in the app registry', async () => {
 
         input.write({
@@ -970,7 +970,7 @@ describe('glimmer-app', function() {
 });
 
 function evalModule(source: string): any {
-  const wrapper = `(function(exports) { ${source}; return exports; })`;
+  const wrapper = `(function(exports) {\n ${source}\n; return exports; })`;
   const func = eval(wrapper);
   const moduleExports = func({});
 

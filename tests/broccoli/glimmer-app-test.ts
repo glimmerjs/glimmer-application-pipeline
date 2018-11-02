@@ -495,6 +495,7 @@ describe('glimmer-app', function() {
         'src': {
           'index.ts': 'console.log("foo");',
           'ui': {
+            'index.html': '',
             'components': {
               'foo-bar': {
                 'template.d.ts': 'declare const _d: {}; export default _d;',
@@ -510,22 +511,26 @@ describe('glimmer-app', function() {
             }
           }
         },
+        'tests': {
+          'index.html': 'foo'
+        },
         'config': {},
         'tsconfig.json': tsconfigContents
       });
 
       let app = createApp({
         trees: {
+          tests: 'tests',
           nodeModules: path.join(__dirname, '..', '..', '..', 'node_modules')
         }
       });
       let output = await buildOutput(app.toTree());
-      let actual = output.read();
+      let actual = output.read() as any;
 
       expect(app.env).to.eq('test');
-      expect(actual['index.js'], 'builds src').to.include('console.log("qux")');
-      expect(actual['index.js'], 'builds tests').to.include('console.log(FooBar)');
-      expect(actual['index.js'], 'builds module map which includes the compiled templates').to.include('Hello!');
+      expect(actual.tests['index.js'], 'builds src').to.include('console.log("qux")');
+      expect(actual.tests['index.js'], 'builds tests').to.include('console.log(FooBar)');
+      expect(actual.tests['index.js'], 'builds module map which includes the compiled templates').to.include('Hello!');
     });
   });
 

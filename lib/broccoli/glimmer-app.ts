@@ -482,7 +482,7 @@ export default class GlimmerApp extends AbstractBuild {
       input: "src/utils/test-helpers/test-helper.js",
       output: {
         format: "umd",
-        file: "index.js",
+        file: "tests/index.js",
         sourcemap: this.options.sourcemaps!.enabled
       }
     });

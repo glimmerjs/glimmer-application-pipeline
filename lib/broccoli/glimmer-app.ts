@@ -165,7 +165,7 @@ export default class GlimmerApp extends AbstractBuild {
 
     let packageTreeArray = [this.publicTree(), this.package(appTree)]
 
-    if (this.env !== 'production') {
+    if (this.env !== 'production' && this.trees.tests !== null) {
       packageTreeArray.push(this.testPackage())
     }
 

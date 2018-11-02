@@ -34,6 +34,7 @@ export interface GlimmerAppOptions {
     styles?: Tree | string;
     public?: Tree | string;
     nodeModules?: Tree | string;
+    tests?: Tree | string;
   }
   registry?: Registry;
   rollup?: RollupOptions;

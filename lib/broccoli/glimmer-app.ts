@@ -154,20 +154,23 @@ export default class GlimmerApp extends AbstractBuild {
    * Creates a Broccoli tree representing the compiled Glimmer application.
    */
   public toTree(): Tree {
-    if (this.env === "test") {
-      return this.testPackage();
-    }
-
     let trees = [
       this.javascriptTree(),
       this.cssTree(),
       this.hbsTree(),
-      this.htmlTree()
+      this.htmlTree(),
     ].filter(Boolean) as Tree[];
 
     let appTree = new MergeTrees(trees);
 
-    let packagedTree = new MergeTrees([this.publicTree(), this.package(appTree)]);
+    let packageTreeArray = [this.publicTree(), this.package(appTree)]
+
+    if (this.env !== 'production') {
+      packageTreeArray.push(this.testPackage())
+    }
+
+    let packagedTree = new MergeTrees(packageTreeArray);
+
     return addonProcessTree(this.project, "postprocessTree", "all", packagedTree);
   }
 
@@ -432,7 +435,7 @@ export default class GlimmerApp extends AbstractBuild {
       jsTrees.push(this.compileTemplatesToJSON(srcTree));
     }
 
-    if (this.env === "test") {
+    if (this.env !== "production") {
       const lintTrees = this.lint();
       jsTrees.push(
         new TestEntrypointBuilder(
@@ -488,13 +491,12 @@ export default class GlimmerApp extends AbstractBuild {
     });
 
     let trees = [jsTree];
-    let testHTMLTree = this.testHTMLTree();
 
-    if (this.env === 'test')  {
-      trees.push(testHTMLTree)
+    if (this.trees.tests !== null)  {
+      trees.push(this.testHTMLTree());
     }
 
-    return new MergeTrees([jsTree, testHTMLTree]);
+    return new MergeTrees(trees);
   }
 
   private lint() {

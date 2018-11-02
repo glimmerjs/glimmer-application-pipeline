@@ -360,7 +360,7 @@ export default class GlimmerApp extends AbstractBuild {
   }
 
   public testHTMLTree() {
-    let testsTree = this.trees.tests as Tree;
+    let testsTree = this.trees.tests!;
 
     return new Funnel(testsTree, {
       files: [ 'tests/index.html' ],
@@ -487,7 +487,12 @@ export default class GlimmerApp extends AbstractBuild {
       }
     });
 
+    let trees = [jsTree];
     let testHTMLTree = this.testHTMLTree();
+
+    if (this.env === 'test')  {
+      trees.push(testHTMLTree)
+    }
 
     return new MergeTrees([jsTree, testHTMLTree]);
   }

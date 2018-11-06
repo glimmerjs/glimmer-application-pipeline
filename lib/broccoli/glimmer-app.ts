@@ -34,7 +34,7 @@ import {
 
 import maybeDebug from "./utils/maybe-debug";
 import normalizeTree from "./utils/normalize-tree"
-import { addonTreesFor, addonLintTree } from "./utils/addons";
+import { addonTreesFor } from "./utils/addons";
 import RollupWithDependencies from "./rollup-with-dependencies";
 import GlimmerJSONCompiler from './compilers/glimmer-json-compiler';
 import defaultModuleConfiguration from "./default-module-configuration";
@@ -436,13 +436,9 @@ export default class GlimmerApp extends AbstractBuild {
     }
 
     if (this.env !== "production") {
-      const lintTrees = this.lint();
       jsTrees.push(
-        new TestEntrypointBuilder(
-          new MergeTrees([tsTree, ...lintTrees])
-        )
+        new TestEntrypointBuilder(tsTree)
       );
-      jsTrees.push(...lintTrees);
     }
 
     // Merge the JavaScript source and generated module map and resolver
@@ -497,27 +493,6 @@ export default class GlimmerApp extends AbstractBuild {
     }
 
     return new MergeTrees(trees);
-  }
-
-  private lint() {
-    let { src } = this.trees;
-
-    let templateTree = new Funnel(src, {
-      include: ["**/*.hbs"]
-    });
-
-    let srcTree = new Funnel(src, {
-      exclude: ["**/*.hbs"]
-    });
-
-    let lintedTemplates = addonLintTree(
-      this.project,
-      "templates",
-      templateTree
-    );
-    let lintedSrc = addonLintTree(this.project, "src", srcTree);
-
-    return [lintedTemplates, lintedSrc];
   }
 
   private rollupTree(jsTree: Tree, options?: {}): Tree {

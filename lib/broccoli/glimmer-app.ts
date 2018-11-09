@@ -64,7 +64,7 @@ export interface AssetTrees {
   public: Tree;
 }
 
-class MissingProjectError extends Error {
+export class MissingProjectError extends Error {
   message = "You must pass through the default arguments passed into your ember-cli-build.js file when constructing a new GlimmerApp";
 }
 

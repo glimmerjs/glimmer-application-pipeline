@@ -488,7 +488,7 @@ export default class GlimmerApp extends AbstractBuild {
 
     let trees = [jsTree];
 
-    if (this.trees.tests !== null)  {
+    if (this.trees.tests !== null) {
       trees.push(this.testHTMLTree());
     }
 

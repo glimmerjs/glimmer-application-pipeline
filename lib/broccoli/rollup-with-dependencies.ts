@@ -129,7 +129,7 @@ class RollupWithDependencies extends Rollup {
         // this should be removed once the various glimmerjs/glimmer-vm
         // packages have been updated to use the "Correct" module entry
         // point
-        customResolveOptions:{
+        customResolveOptions: {
           packageFilter(pkg: PackageJSON, file: string) {
             if (pkg.name.startsWith('@glimmer/')) {
               pkg.main = 'dist/modules/es2017/index.js';

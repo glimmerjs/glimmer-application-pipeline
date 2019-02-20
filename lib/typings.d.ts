@@ -61,7 +61,10 @@ declare module "broccoli-config-replace" {
   interface ConfigReplaceOptions {
     configPath: string;
     files: string[];
-    patterns: { match: RegExp, replacement: (config: any) => string; }[];
+    patterns: (
+      { match: RegExp; replacement: (config: any) => any; } |
+      { match: RegExp; replacement: (config: any, match: RegExp, type: string) => string; }
+    )[];
   }
 
   class ConfigReplace {

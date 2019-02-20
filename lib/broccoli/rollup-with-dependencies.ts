@@ -156,7 +156,7 @@ class RollupWithDependencies extends Rollup {
       console.log("Rollup warning: ", warning.message);
     };
 
-    return Rollup.prototype.build.apply(this, args);
+    return Rollup.prototype.build.apply(this, args as []);
   }
 }
 

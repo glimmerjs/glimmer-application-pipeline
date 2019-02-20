@@ -34,7 +34,7 @@ import {
 
 import maybeDebug from "./utils/maybe-debug";
 import normalizeTree from "./utils/normalize-tree"
-import { addonTreesFor, addonLintTree } from "./utils/addons";
+import { addonTreesFor } from "./utils/addons";
 import RollupWithDependencies from "./rollup-with-dependencies";
 import GlimmerJSONCompiler from './compilers/glimmer-json-compiler';
 import defaultModuleConfiguration from "./default-module-configuration";
@@ -54,6 +54,7 @@ export interface Trees {
   styles: Tree | null;
   public: Tree | null;
   nodeModules: Tree | null;
+  tests: Tree | null;
 }
 
 export interface AssetTrees {
@@ -153,20 +154,23 @@ export default class GlimmerApp extends AbstractBuild {
    * Creates a Broccoli tree representing the compiled Glimmer application.
    */
   public toTree(): Tree {
-    if (this.env === "test") {
-      return this.testPackage();
-    }
-
     let trees = [
       this.javascriptTree(),
       this.cssTree(),
       this.hbsTree(),
-      this.htmlTree()
+      this.htmlTree(),
     ].filter(Boolean) as Tree[];
 
     let appTree = new MergeTrees(trees);
 
-    let packagedTree = new MergeTrees([this.publicTree(), this.package(appTree)]);
+    let packageTreeArray = [this.publicTree(), this.package(appTree)]
+
+    if (this.env !== 'production' && this.trees.tests !== null) {
+      packageTreeArray.push(this.testPackage())
+    }
+
+    let packagedTree = new MergeTrees(packageTreeArray);
+
     return addonProcessTree(this.project, "postprocessTree", "all", packagedTree);
   }
 
@@ -209,11 +213,22 @@ export default class GlimmerApp extends AbstractBuild {
       nodeModulesTree = new Funnel(nodeModulesTree, { destDir: "node_modules/" });
     }
 
+    let rawTestsTree = trees && trees.tests;
+    let testsTree: Tree | null = normalizeTree(rawTestsTree, root, 'tests');
+
+    if (testsTree) {
+      testsTree = new Funnel(testsTree, {
+        destDir: 'tests'
+      });
+    }
+
+
     return {
       src: maybeDebug(srcTree, "src"),
       styles: maybeDebug(stylesTree, "styles"),
       public: maybeDebug(publicTree, "public"),
-      nodeModules: nodeModulesTree
+      nodeModules: nodeModulesTree,
+      tests: maybeDebug(testsTree, 'tests')
     };
   }
 
@@ -347,6 +362,15 @@ export default class GlimmerApp extends AbstractBuild {
     });
   }
 
+  public testHTMLTree() {
+    let testsTree = this.trees.tests!;
+
+    return new Funnel(testsTree, {
+      files: [ 'tests/index.html' ],
+      annotation: 'Funnel: tests/index.html'
+    });
+  }
+
   protected contentFor(config: any, match: RegExp, type: string) {
     let content: string[] = [];
 
@@ -411,14 +435,10 @@ export default class GlimmerApp extends AbstractBuild {
       jsTrees.push(this.compileTemplatesToJSON(srcTree));
     }
 
-    if (this.env === "test") {
-      const lintTrees = this.lint();
+    if (this.env !== "production") {
       jsTrees.push(
-        new TestEntrypointBuilder(
-          new MergeTrees([tsTree, ...lintTrees])
-        )
+        new TestEntrypointBuilder(tsTree)
       );
-      jsTrees.push(...lintTrees);
     }
 
     // Merge the JavaScript source and generated module map and resolver
@@ -457,35 +477,22 @@ export default class GlimmerApp extends AbstractBuild {
   private testPackage(): Tree {
     let jsTree = this.javascriptTree();
 
-    return this.rollupTree(jsTree, {
+    jsTree = this.rollupTree(jsTree, {
       input: "src/utils/test-helpers/test-helper.js",
       output: {
         format: "umd",
-        file: "index.js",
+        file: "tests/index.js",
         sourcemap: this.options.sourcemaps!.enabled
       }
     });
-  }
 
-  private lint() {
-    let { src } = this.trees;
+    let trees = [jsTree];
 
-    let templateTree = new Funnel(src, {
-      include: ["**/*.hbs"]
-    });
+    if (this.trees.tests !== null)  {
+      trees.push(this.testHTMLTree());
+    }
 
-    let srcTree = new Funnel(src, {
-      exclude: ["**/*.hbs"]
-    });
-
-    let lintedTemplates = addonLintTree(
-      this.project,
-      "templates",
-      templateTree
-    );
-    let lintedSrc = addonLintTree(this.project, "src", srcTree);
-
-    return [lintedTemplates, lintedSrc];
+    return new MergeTrees(trees);
   }
 
   private rollupTree(jsTree: Tree, options?: {}): Tree {

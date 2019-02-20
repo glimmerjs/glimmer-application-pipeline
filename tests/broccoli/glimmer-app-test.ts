@@ -8,7 +8,6 @@ import { buildOutput, createTempDir, TempDir } from 'broccoli-test-helper';
 const MockCLI = require('ember-cli/tests/helpers/mock-cli');
 const Project = require('ember-cli/lib/models/project');
 const stew = require('broccoli-stew');
-const td = require('testdouble');
 
 const { stripIndent } = require('common-tags');
 
@@ -139,54 +138,6 @@ describe('glimmer-app', function() {
       });
     });
   });
-
-  describe('lintTree', function() {
-    const ORIGINAL_EMBER_ENV = process.env.EMBER_ENV;
-
-    beforeEach(() => {
-      process.env.EMBER_ENV = 'test';
-    });
-
-    afterEach(() => {
-      process.env.EMBER_ENV = ORIGINAL_EMBER_ENV;
-    });
-
-    it('invokes lintTree hook on addons', async function() {
-      input.write({
-        'src': {
-          'index.ts': 'export default {};',
-          'ui': {
-            'index.html': 'src',
-          },
-          'utils': {
-            'test-helpers': {
-              'test-helper.ts': ''
-            }
-          }
-        },
-        'config': {}
-      });
-
-      let lint = td.function('lintTree');
-
-      let app = createApp({
-        trees: {
-          nodeModules: path.join(__dirname, '..', '..', '..', 'node_modules')
-        }
-      }, [
-        {
-          name: 'awesome-linter',
-          lintTree: lint
-        }
-      ]);
-
-      await buildOutput(app.toTree());
-      td.verify(lint('templates', td.matchers.anything()));
-      td.verify(lint('src', td.matchers.anything()));
-
-    });
-
-  }),
 
   describe('publicTree', function() {
     it('includes any files in `public/` in the project', async function() {
@@ -495,6 +446,7 @@ describe('glimmer-app', function() {
         'src': {
           'index.ts': 'console.log("foo");',
           'ui': {
+            'index.html': '',
             'components': {
               'foo-bar': {
                 'template.d.ts': 'declare const _d: {}; export default _d;',
@@ -510,22 +462,26 @@ describe('glimmer-app', function() {
             }
           }
         },
+        'tests': {
+          'index.html': 'foo'
+        },
         'config': {},
         'tsconfig.json': tsconfigContents
       });
 
       let app = createApp({
         trees: {
+          tests: 'tests',
           nodeModules: path.join(__dirname, '..', '..', '..', 'node_modules')
         }
       });
       let output = await buildOutput(app.toTree());
-      let actual = output.read();
+      let actual = output.read() as any;
 
       expect(app.env).to.eq('test');
-      expect(actual['index.js'], 'builds src').to.include('console.log("qux")');
-      expect(actual['index.js'], 'builds tests').to.include('console.log(FooBar)');
-      expect(actual['index.js'], 'builds module map which includes the compiled templates').to.include('Hello!');
+      expect(actual.tests['index.js'], 'builds src').to.include('console.log("qux")');
+      expect(actual.tests['index.js'], 'builds tests').to.include('console.log(FooBar)');
+      expect(actual.tests['index.js'], 'builds module map which includes the compiled templates').to.include('Hello!');
     });
   });
 

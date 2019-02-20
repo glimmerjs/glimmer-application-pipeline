@@ -23,7 +23,7 @@ export default class TestEntrypointBuilder extends CachingWriterPlugin {
 
     function isTest({ name }: { name: string }) { return name.match(/\-test$/); }
     function asImportStatement({ dir, name }: { dir: string, name: string }) {
-      let testDirRelativePath = `./${path.join(dir, name)}`;
+      let testDirRelativePath = `./${path.posix.join(dir, name)}`;
       return `import '${testDirRelativePath}';\n`;
     }
 

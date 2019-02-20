@@ -46,7 +46,7 @@
     "broccoli-rollup": "^2.0.0",
     "broccoli-source": "^1.1.0",
     "broccoli-string-replace": "^0.1.1",
-    "broccoli-typescript-compiler": "^2.2.0",
+    "broccoli-typescript-compiler": "^4.1.0",
     "common-tags": "^1.4.0",
     "ember-build-utilities": "^0.4.0",
     "ember-cli-inject-live-reload": "^1.4.1",

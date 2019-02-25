@@ -5,7 +5,7 @@ import { Tree } from "broccoli";
 import ConfigLoader = require("broccoli-config-loader");
 import Funnel = require("broccoli-funnel");
 import writeFile = require("broccoli-file-creator");
-import { typescript } from "broccoli-typescript-compiler";
+import typescript from "broccoli-typescript-compiler";
 import { UnwatchedDir } from "broccoli-source";
 import MergeTrees = require("broccoli-merge-trees");
 import ConfigReplace = require("broccoli-config-replace");
@@ -488,7 +488,7 @@ export default class GlimmerApp extends AbstractBuild {
 
     let trees = [jsTree];
 
-    if (this.trees.tests !== null)  {
+    if (this.trees.tests !== null) {
       trees.push(this.testHTMLTree());
     }
 

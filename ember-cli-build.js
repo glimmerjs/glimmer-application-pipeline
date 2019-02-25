@@ -3,7 +3,7 @@
 const path = require('path');
 const Funnel = require('broccoli-funnel');
 const MergeTrees = require('broccoli-merge-trees');
-const { TypeScriptPlugin } = require('broccoli-typescript-compiler');
+const TypeScriptPlugin = require('broccoli-typescript-compiler').default;
 
 module.exports = function() {
   let projectPath = __dirname;
@@ -16,7 +16,7 @@ module.exports = function() {
     new Funnel(testsPath, { destDir: 'tests' })
   ]);
 
-  let compiledTypescript = new TypeScriptPlugin(srcTrees);
+  let compiledTypescript = TypeScriptPlugin(srcTrees);
 
   return compiledTypescript;
 };

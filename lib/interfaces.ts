@@ -42,3 +42,9 @@ export interface GlimmerAppOptions {
   storeConfigInMeta?: boolean;
   templateFormat?: 'json' | 'bytecode'
 }
+
+export interface GlimmerAddonOptions {
+  trees?: {
+    src: Tree | string;
+  }
+}
